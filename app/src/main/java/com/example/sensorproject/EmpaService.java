@@ -1,32 +1,19 @@
 package com.example.sensorproject;
 
-import android.Manifest;
-import android.app.Activity;
 import android.app.Service;
-import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import com.empatica.empalink.ConnectionNotAllowedException;
 import com.empatica.empalink.EmpaDeviceManager;
 import com.empatica.empalink.EmpaticaDevice;
-import com.empatica.empalink.config.EmpaSensorStatus;
 import com.empatica.empalink.config.EmpaSensorType;
 import com.empatica.empalink.config.EmpaStatus;
 import com.empatica.empalink.delegate.EmpaDataDelegate;
 import com.empatica.empalink.delegate.EmpaStatusDelegate;
-
-import java.io.FileNotFoundException;
-import java.util.Objects;
 
 public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatusDelegate {
 
@@ -65,12 +52,6 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
     public EmpaService() {
     }
 
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-
-    }
 
     @Override
     public void onDestroy() {

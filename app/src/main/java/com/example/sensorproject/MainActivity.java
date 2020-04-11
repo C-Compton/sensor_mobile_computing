@@ -8,7 +8,6 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.bluetooth.BluetoothAdapter;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -25,17 +24,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.empatica.empalink.ConnectionNotAllowedException;
-import com.empatica.empalink.EmpaDeviceManager;
-import com.empatica.empalink.EmpaticaDevice;
-import com.empatica.empalink.config.EmpaSensorStatus;
-import com.empatica.empalink.config.EmpaSensorType;
 import com.empatica.empalink.config.EmpaStatus;
-import com.empatica.empalink.delegate.EmpaStatusDelegate;
 import com.example.sensorproject.databinding.ActivityMainBinding;
-import com.squareup.okhttp.internal.NamedRunnable;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -61,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView edaLabel;
 
+    @SuppressWarnings( "FieldCanBeLocal" )
     private TextView ibiLabel;
 
     private TextView temperatureLabel;
@@ -138,20 +130,16 @@ public class MainActivity extends AppCompatActivity {
         initUiComponents();
 
         final Button getReadingsButton = viewBinding.getReadingsButton;
-        getReadingsButton.setOnClickListener( new View.OnClickListener() {
+        getReadingsButton.setOnClickListener( v -> {
 
-            @Override
-            public void onClick( View v ) {
-
-                if ( bound ) {
-                    updateLabel( accel_xLabel, "" + empaService.getX() );
-                    updateLabel( accel_yLabel, "" + empaService.getX() );
-                    updateLabel( accel_zLabel, "" + empaService.getX() );
-                    updateLabel( bvpLabel, "" + empaService.getBvp() );
-                    updateLabel( batteryLabel, "" + empaService.getLevel() );
-                    updateLabel( edaLabel, "" + empaService.getGsr() );
-                    updateLabel( temperatureLabel, "" + empaService.getT() );
-                }
+            if ( bound ) {
+                updateLabel( accel_xLabel, "" + empaService.getX() );
+                updateLabel( accel_yLabel, "" + empaService.getX() );
+                updateLabel( accel_zLabel, "" + empaService.getX() );
+                updateLabel( bvpLabel, "" + empaService.getBvp() );
+                updateLabel( batteryLabel, "" + empaService.getLevel() );
+                updateLabel( edaLabel, "" + empaService.getGsr() );
+                updateLabel( temperatureLabel, "" + empaService.getT() );
             }
         } );
 
@@ -174,18 +162,17 @@ public class MainActivity extends AppCompatActivity {
                             empaService.startScanning();
                             hide();
                             // Periodically check if device is still connected
-//                            handler.postDelayed( this, 5000 );
+                            handler.postDelayed( this, 5000 );
                         } else if ( EmpaStatus.CONNECTING.equals( status ) ) {
-//                            handler.postDelayed( this, 5000 );
+                            handler.postDelayed( this, 5000 );
                         } else if (EmpaStatus.CONNECTED.equals( status) ) {
                             show();
                             // Periodically check if device is still connected
-//                            handler.postDelayed(this, 5000);
+                            handler.postDelayed(this, 5000);
                         } else if (EmpaStatus.DISCONNECTED.equals( status )) {
                             updateLabel( deviceNameLabel, "" );
                             hide();
                         }
-                        handler.postDelayed(this, 5000);
                     }
                 });
 
@@ -195,13 +182,7 @@ public class MainActivity extends AppCompatActivity {
 
         final Button disconnectButton = viewBinding.disconnectButton;
 
-        disconnectButton.setOnClickListener( new View.OnClickListener() {
-
-            @Override
-            public void onClick( View v ) {
-                empaService.disconnect();
-            }
-        } );
+        disconnectButton.setOnClickListener( v -> empaService.disconnect() );
     }
 
     @Override
@@ -209,59 +190,54 @@ public class MainActivity extends AppCompatActivity {
                                             @NonNull String[] permissions,
                                             @NonNull int[] grantResults ) {
 
-        switch ( requestCode ) {
-            case REQUEST_PERMISSION_ACCESS_COARSE_LOCATION:
-                // If request is cancelled, the result arrays are empty.
-                if ( grantResults.length > 0 &&
-                     grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
-                    // Permission was granted, yay!
-                    bindService();
-                } else {
-                    // Permission denied, boo!
-                    final boolean needRationale = ActivityCompat.shouldShowRequestPermissionRationale(
-                            this,
-                            Manifest.permission.ACCESS_COARSE_LOCATION );
-                    new AlertDialog.Builder( this ).setTitle( "Permission required" )
-                                                   .setMessage(
-                                                           "Without this permission bluetooth low energy devices cannot be found, allow it in order to connect to the device." )
-                                                   .setPositiveButton( "Retry",
-                                                                       new DialogInterface.OnClickListener() {
-                                                                           public void onClick(
-                                                                                   DialogInterface dialog,
-                                                                                   int which ) {
-                                                                               // try again
-                                                                               if ( needRationale ) {
-                                                                                   // the "never ask again" flash is not set, try again with permission request
-                                                                                   bindService();
-                                                                               } else {
-                                                                                   // the "never ask again" flag is set so the permission requests is disabled, try open app settings to enable the permission
-                                                                                   Intent intent = new Intent(
-                                                                                           Settings.ACTION_APPLICATION_DETAILS_SETTINGS );
-                                                                                   Uri uri = Uri.fromParts(
-                                                                                           "package",
-                                                                                           getPackageName(),
-                                                                                           null );
-                                                                                   intent.setData(
-                                                                                           uri );
-                                                                                   startActivity(
-                                                                                           intent );
-                                                                               }
+        if ( requestCode == REQUEST_PERMISSION_ACCESS_COARSE_LOCATION ) {// If request is cancelled, the result arrays are empty.
+            if ( grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
+                // Permission was granted, yay!
+                bindService();
+            } else {
+                // Permission denied, boo!
+                final boolean needRationale = ActivityCompat.shouldShowRequestPermissionRationale(
+                        this, Manifest.permission.ACCESS_COARSE_LOCATION );
+                new AlertDialog.Builder( this ).setTitle( "Permission required" )
+                                               .setMessage(
+                                                       "Without this permission bluetooth low energy devices cannot be found, allow it in order to connect to the device." )
+                                               .setPositiveButton( "Retry",
+                                                                   new DialogInterface.OnClickListener() {
+                                                                       public void onClick(
+                                                                               DialogInterface dialog,
+                                                                               int which ) {
+                                                                           // try again
+                                                                           if ( needRationale ) {
+                                                                               // the "never ask again" flash is not set, try again with permission request
+                                                                               bindService();
+                                                                           } else {
+                                                                               // the "never ask again" flag is set so the permission requests is disabled, try open app settings to enable the permission
+                                                                               Intent intent = new Intent(
+                                                                                       Settings.ACTION_APPLICATION_DETAILS_SETTINGS );
+                                                                               Uri uri = Uri.fromParts(
+                                                                                       "package",
+                                                                                       getPackageName(),
+                                                                                       null );
+                                                                               intent.setData(
+                                                                                       uri );
+                                                                               startActivity(
+                                                                                       intent );
                                                                            }
-                                                                       } )
-                                                   .setNegativeButton( "Exit application",
-                                                                       new DialogInterface.OnClickListener() {
-                                                                           public void onClick(
-                                                                                   DialogInterface dialog,
-                                                                                   int which ) {
-                                                                               // without permission exit is the only way
-                                                                               finish();
-                                                                           }
-                                                                       } )
-                                                   .show();
-                }
-                break;
-            default:
-                Log.e( "TAG", "Unknown request code: " + requestCode );
+                                                                       }
+                                                                   } )
+                                               .setNegativeButton( "Exit application",
+                                                                   new DialogInterface.OnClickListener() {
+                                                                       public void onClick(
+                                                                               DialogInterface dialog,
+                                                                               int which ) {
+                                                                           // without permission exit is the only way
+                                                                           finish();
+                                                                       }
+                                                                   } )
+                                               .show();
+            }
+        } else {
+            Log.e( "TAG", "Unknown request code: " + requestCode );
         }
     }
 
@@ -287,12 +263,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Update a label with some text, making sure this is run in the UI thread
     private void updateLabel( final TextView label, final String text ) {
-        runOnUiThread( new Runnable() {
-            @Override
-            public void run() {
-                label.setText( text );
-            }
-        } );
+        runOnUiThread( () -> label.setText( text ) );
     }
 
     private void initUiComponents() {
@@ -323,25 +294,17 @@ public class MainActivity extends AppCompatActivity {
 
     void show() {
 
-        runOnUiThread( new Runnable() {
-
-            @Override
-            public void run() {
-                findSensorButton.setVisibility( View.INVISIBLE );
-                dataCnt.setVisibility( View.VISIBLE );
-            }
+        runOnUiThread( () -> {
+            findSensorButton.setVisibility( View.INVISIBLE );
+            dataCnt.setVisibility( View.VISIBLE );
         } );
     }
 
     void hide() {
 
-        runOnUiThread( new Runnable() {
-
-            @Override
-            public void run() {
-                findSensorButton.setVisibility( View.VISIBLE );
-                dataCnt.setVisibility( View.INVISIBLE );
-            }
+        runOnUiThread( () -> {
+            findSensorButton.setVisibility( View.VISIBLE );
+            dataCnt.setVisibility( View.INVISIBLE );
         } );
     }
 }
