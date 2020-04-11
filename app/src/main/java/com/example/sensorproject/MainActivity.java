@@ -9,13 +9,17 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
 import android.provider.Settings;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -29,19 +33,23 @@ import com.empatica.empalink.EmpaticaDevice;
 import com.empatica.empalink.config.EmpaSensorStatus;
 import com.empatica.empalink.config.EmpaSensorType;
 import com.empatica.empalink.config.EmpaStatus;
-import com.empatica.empalink.delegate.EmpaDataDelegate;
 import com.empatica.empalink.delegate.EmpaStatusDelegate;
+import com.example.sensorproject.databinding.ActivityMainBinding;
+import com.squareup.okhttp.internal.NamedRunnable;
 
-public class MainActivity extends AppCompatActivity
-        implements EmpaDataDelegate, EmpaStatusDelegate {
+public class MainActivity extends AppCompatActivity {
+
+    private EmpaService empaService;
+
+    private boolean bound = false;
+
+    private ActivityMainBinding viewBinding;
 
     private static final int REQUEST_ENABLE_BT = 1;
 
     private static final int REQUEST_PERMISSION_ACCESS_COARSE_LOCATION = 1;
 
-    private static final String API_KEY = "357c23e0400544f59bfdf5e1dd578089";
-
-    private EmpaDeviceManager deviceManager = null;
+    private static final String PERMISSION_STRING = Manifest.permission.ACCESS_COARSE_LOCATION;
 
     private TextView accel_xLabel;
 
@@ -65,66 +73,149 @@ public class MainActivity extends AppCompatActivity
 
     private LinearLayout dataCnt;
 
+    private Button findSensorButton;
+
+    private final ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected( ComponentName name, IBinder service ) {
+            EmpaService.EmpaServiceBinder binder = ( EmpaService.EmpaServiceBinder ) service;
+
+            empaService = binder.getEmpaService();
+            bound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected( ComponentName name ) {
+            bound = false;
+        }
+    };
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if ( ContextCompat.checkSelfPermission( this, PERMISSION_STRING ) !=
+             PackageManager.PERMISSION_GRANTED ) {
+            ActivityCompat.requestPermissions( this,
+                                               new String[] {
+                                                       Manifest.permission.ACCESS_COARSE_LOCATION },
+                                               REQUEST_PERMISSION_ACCESS_COARSE_LOCATION );
+        } else {
+            bindService();
+        }
+    }
+
+    private void bindService() {
+        Intent intent = new Intent( this, EmpaService.class) ;
+        bindService(intent, connection, Context.BIND_AUTO_CREATE );
+        waitForBind();
+    }
+
+    private void waitForBind() {
+        final Handler handler = new Handler();
+
+        handler.post( new Runnable() {
+            @Override
+            public void run() {
+                if ( bound ) {
+                    viewBinding.findSensorButton.setVisibility( View.VISIBLE );
+                } else {
+                    handler.postDelayed(this, 1000);
+                }
+            }
+        });
+    }
 
     @Override
     protected void onCreate( Bundle savedInstanceState ) {
 
         super.onCreate( savedInstanceState );
 
-        setContentView( R.layout.activity_main );
+        viewBinding = ActivityMainBinding.inflate( getLayoutInflater() );
+        View view = viewBinding.getRoot();
 
-        // Initialize vars that reference UI components
-        statusLabel = ( TextView ) findViewById( R.id.status );
+        setContentView( view );
 
-        dataCnt = ( LinearLayout ) findViewById( R.id.dataArea );
+        initUiComponents();
 
-        accel_xLabel = ( TextView ) findViewById( R.id.accel_x );
+        final Button getReadingsButton = viewBinding.getReadingsButton;
+        getReadingsButton.setOnClickListener( new View.OnClickListener() {
 
-        accel_yLabel = ( TextView ) findViewById( R.id.accel_y );
+            @Override
+            public void onClick( View v ) {
 
-        accel_zLabel = ( TextView ) findViewById( R.id.accel_z );
+                if ( bound ) {
+                    updateLabel( accel_xLabel, "" + empaService.getX() );
+                    updateLabel( accel_yLabel, "" + empaService.getX() );
+                    updateLabel( accel_zLabel, "" + empaService.getX() );
+                    updateLabel( bvpLabel, "" + empaService.getBvp() );
+                    updateLabel( batteryLabel, "" + empaService.getLevel() );
+                    updateLabel( edaLabel, "" + empaService.getGsr() );
+                    updateLabel( temperatureLabel, "" + empaService.getT() );
+                }
+            }
+        } );
 
-        bvpLabel = ( TextView ) findViewById( R.id.bvp );
+        findSensorButton = viewBinding.findSensorButton;
 
-        edaLabel = ( TextView ) findViewById( R.id.eda );
+        findSensorButton.setOnClickListener( new View.OnClickListener() {
 
-        ibiLabel = ( TextView ) findViewById( R.id.ibi );
+            @Override
+            public void onClick( View v ) {
+                Handler handler = new Handler() ;
 
-        temperatureLabel = ( TextView ) findViewById( R.id.temperature );
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        EmpaStatus status = empaService.getStatus();
+                        updateLabel( statusLabel, status.name() );
+                        if (EmpaStatus.READY.equals(status)) {
+                            updateLabel( statusLabel, status.name() + " - Turn on your device" );
+                            // start scanning
+                            empaService.startScanning();
+                            hide();
+                            // Periodically check if device is still connected
+//                            handler.postDelayed( this, 5000 );
+                        } else if ( EmpaStatus.CONNECTING.equals( status ) ) {
+//                            handler.postDelayed( this, 5000 );
+                        } else if (EmpaStatus.CONNECTED.equals( status) ) {
+                            show();
+                            // Periodically check if device is still connected
+//                            handler.postDelayed(this, 5000);
+                        } else if (EmpaStatus.DISCONNECTED.equals( status )) {
+                            updateLabel( deviceNameLabel, "" );
+                            hide();
+                        }
+                        handler.postDelayed(this, 5000);
+                    }
+                });
 
-        batteryLabel = ( TextView ) findViewById( R.id.battery );
 
-        deviceNameLabel = ( TextView ) findViewById( R.id.deviceName );
+            }
+        } );
 
-
-        final Button disconnectButton = findViewById( R.id.disconnectButton );
+        final Button disconnectButton = viewBinding.disconnectButton;
 
         disconnectButton.setOnClickListener( new View.OnClickListener() {
 
             @Override
             public void onClick( View v ) {
-
-                if ( deviceManager != null ) {
-
-                    deviceManager.disconnect();
-                }
+                empaService.disconnect();
             }
         } );
-
-        initEmpaticaDeviceManager();
     }
 
     @Override
     public void onRequestPermissionsResult( int requestCode,
                                             @NonNull String[] permissions,
                                             @NonNull int[] grantResults ) {
+
         switch ( requestCode ) {
             case REQUEST_PERMISSION_ACCESS_COARSE_LOCATION:
                 // If request is cancelled, the result arrays are empty.
                 if ( grantResults.length > 0 &&
                      grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
                     // Permission was granted, yay!
-                    initEmpaticaDeviceManager();
+                    bindService();
                 } else {
                     // Permission denied, boo!
                     final boolean needRationale = ActivityCompat.shouldShowRequestPermissionRationale(
@@ -141,7 +232,7 @@ public class MainActivity extends AppCompatActivity
                                                                                // try again
                                                                                if ( needRationale ) {
                                                                                    // the "never ask again" flash is not set, try again with permission request
-                                                                                   initEmpaticaDeviceManager();
+                                                                                   bindService();
                                                                                } else {
                                                                                    // the "never ask again" flag is set so the permission requests is disabled, try open app settings to enable the permission
                                                                                    Intent intent = new Intent(
@@ -174,97 +265,13 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void initEmpaticaDeviceManager() {
-        // Android 6 (API level 23) now require ACCESS_COARSE_LOCATION permission to use BLE
-        if ( ContextCompat.checkSelfPermission( this,
-                                                Manifest.permission.ACCESS_COARSE_LOCATION ) !=
-             PackageManager.PERMISSION_GRANTED ) {
-            ActivityCompat.requestPermissions( this,
-                                               new String[] {
-                                                       Manifest.permission.ACCESS_COARSE_LOCATION },
-                                               REQUEST_PERMISSION_ACCESS_COARSE_LOCATION );
-        } else {
-
-            if ( TextUtils.isEmpty( getString( R.string.empatica_api_key ) ) ) {
-                new AlertDialog.Builder( this ).setTitle( "Warning" )
-                                               .setMessage( "Please insert your API KEY" )
-                                               .setNegativeButton( "Close",
-                                                                   new DialogInterface.OnClickListener() {
-                                                                       public void onClick(
-                                                                               DialogInterface dialog,
-                                                                               int which ) {
-                                                                           // without permission exit is the only way
-                                                                           finish();
-                                                                       }
-                                                                   } )
-                                               .show();
-                return;
-            }
-
-            // Create a new EmpaDeviceManager. MainActivity is both its data and status delegate.
-            deviceManager = new EmpaDeviceManager( getApplicationContext(), this, this );
-
-            // Initialize the Device Manager using your API key. You need to have Internet access at this point.
-            deviceManager.authenticateWithAPIKey( getString( R.string.empatica_api_key ) );
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if ( deviceManager != null ) {
-            deviceManager.stopScanning();
-        }
-    }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if ( deviceManager != null ) {
-            deviceManager.cleanUp();
-        }
-    }
-
-    @Override
-    public void didDiscoverDevice( EmpaticaDevice bluetoothDevice,
-                                   String deviceName,
-                                   int rssi,
-                                   boolean allowed ) {
-        // Check if the discovered device can be used with your API key. If allowed is always false,
-        // the device is not linked with your API key. Please check your developer area at
-        // https://www.empatica.com/connect/developer.php
-        if ( allowed ) {
-            // Stop scanning. The first allowed device will do.
-            deviceManager.stopScanning();
-            try {
-                // Connect to the device
-                deviceManager.connectDevice( bluetoothDevice );
-                updateLabel( deviceNameLabel, "To: " + deviceName );
-            } catch ( ConnectionNotAllowedException e ) {
-                // This should happen only if you try to connect when allowed == false.
-                Toast.makeText( MainActivity.this,
-                                "Sorry, you can't connect to this device",
-                                Toast.LENGTH_SHORT ).show();
-            }
-        }
-    }
-
-    @Override
-    public void didFailedScanning( int errorCode ) {
-        Log.e( "DidFailedScanning", "Failed to locate Empatica device" );
-
-    }
-
-    @Override
-    public void didRequestEnableBluetooth() {
-        // Request the user to enable Bluetooth
-        Intent enableBtIntent = new Intent( BluetoothAdapter.ACTION_REQUEST_ENABLE );
-        startActivityForResult( enableBtIntent, REQUEST_ENABLE_BT );
-    }
-
-    @Override
-    public void bluetoothStateChanged() {
-
+        viewBinding = null;
+        unbindService( connection );
+        bound = false;
     }
 
     @Override
@@ -277,70 +284,6 @@ public class MainActivity extends AppCompatActivity
         super.onActivityResult( requestCode, resultCode, data );
     }
 
-    @Override
-    public void didUpdateSensorStatus( @EmpaSensorStatus int status, EmpaSensorType type ) {
-
-        didUpdateOnWristStatus( status );
-    }
-
-    @Override
-    public void didUpdateStatus( EmpaStatus status ) {
-        // Update the UI
-        updateLabel( statusLabel, status.name() );
-
-        // The device manager is ready for use
-        if ( status == EmpaStatus.READY ) {
-            updateLabel( statusLabel, status.name() + " - Turn on your device" );
-            // Start scanning
-            Log.i( "TAG", "Device manager ready. Start scanning..." );
-            deviceManager.startScanning();
-            // The device manager has established a connection
-
-            hide();
-
-        } else if ( status == EmpaStatus.CONNECTED ) {
-
-            show();
-            // The device manager disconnected from a device
-        } else if ( status == EmpaStatus.DISCONNECTED ) {
-
-            updateLabel( deviceNameLabel, "" );
-
-            hide();
-        }
-    }
-
-    @Override
-    public void didReceiveAcceleration( int x, int y, int z, double timestamp ) {
-        updateLabel( accel_xLabel, "" + x );
-        updateLabel( accel_yLabel, "" + y );
-        updateLabel( accel_zLabel, "" + z );
-    }
-
-    @Override
-    public void didReceiveBVP( float bvp, double timestamp ) {
-        updateLabel( bvpLabel, "" + bvp );
-    }
-
-    @Override
-    public void didReceiveBatteryLevel( float battery, double timestamp ) {
-        updateLabel( batteryLabel, String.format( "%.0f %%", battery * 100 ) );
-    }
-
-    @Override
-    public void didReceiveGSR( float gsr, double timestamp ) {
-        updateLabel( edaLabel, "" + gsr );
-    }
-
-    @Override
-    public void didReceiveIBI( float ibi, double timestamp ) {
-        updateLabel( ibiLabel, "" + ibi );
-    }
-
-    @Override
-    public void didReceiveTemperature( float temp, double timestamp ) {
-        updateLabel( temperatureLabel, "" + temp );
-    }
 
     // Update a label with some text, making sure this is run in the UI thread
     private void updateLabel( final TextView label, final String text ) {
@@ -352,34 +295,30 @@ public class MainActivity extends AppCompatActivity
         } );
     }
 
-    @Override
-    public void didReceiveTag( double timestamp ) {
+    private void initUiComponents() {
 
-    }
+        // Initialize vars that reference UI components
+        statusLabel = viewBinding.status;
 
-    @Override
-    public void didEstablishConnection() {
+        dataCnt = viewBinding.dataArea;
 
-        show();
-    }
+        accel_xLabel = viewBinding.accelX;
 
-    @Override
-    public void didUpdateOnWristStatus( @EmpaSensorStatus final int status ) {
+        accel_yLabel = viewBinding.accelY;
 
-        runOnUiThread( new Runnable() {
+        accel_zLabel = viewBinding.accelZ;
 
-            @Override
-            public void run() {
+        bvpLabel = viewBinding.bvp;
 
-                if ( status == EmpaSensorStatus.ON_WRIST ) {
+        edaLabel = viewBinding.eda;
 
-                    ( ( TextView ) findViewById( R.id.wrist_status_label ) ).setText( "ON WRIST" );
-                } else {
+        ibiLabel = viewBinding.ibi;
 
-                    ( ( TextView ) findViewById( R.id.wrist_status_label ) ).setText( "NOT ON WRIST" );
-                }
-            }
-        } );
+        temperatureLabel = viewBinding.temperature;
+
+        batteryLabel = viewBinding.battery;
+
+        deviceNameLabel = viewBinding.deviceName;
     }
 
     void show() {
@@ -388,7 +327,7 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void run() {
-
+                findSensorButton.setVisibility( View.INVISIBLE );
                 dataCnt.setVisibility( View.VISIBLE );
             }
         } );
@@ -400,7 +339,7 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void run() {
-
+                findSensorButton.setVisibility( View.VISIBLE );
                 dataCnt.setVisibility( View.INVISIBLE );
             }
         } );
