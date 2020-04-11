@@ -88,17 +88,16 @@ public class MainActivity extends AppCompatActivity {
         if ( ContextCompat.checkSelfPermission( this, PERMISSION_STRING ) !=
              PackageManager.PERMISSION_GRANTED ) {
             ActivityCompat.requestPermissions( this,
-                                               new String[] {
-                                                       Manifest.permission.ACCESS_COARSE_LOCATION },
-                                               REQUEST_PERMISSION_ACCESS_COARSE_LOCATION );
+                    new String[] { Manifest.permission.ACCESS_COARSE_LOCATION },
+                    REQUEST_PERMISSION_ACCESS_COARSE_LOCATION );
         } else {
             bindService();
         }
     }
 
     private void bindService() {
-        Intent intent = new Intent( this, EmpaService.class) ;
-        bindService(intent, connection, Context.BIND_AUTO_CREATE );
+        Intent intent = new Intent( this, EmpaService.class );
+        bindService( intent, connection, Context.BIND_AUTO_CREATE );
         waitForBind();
     }
 
@@ -111,10 +110,10 @@ public class MainActivity extends AppCompatActivity {
                 if ( bound ) {
                     viewBinding.findSensorButton.setVisibility( View.VISIBLE );
                 } else {
-                    handler.postDelayed(this, 1000);
+                    handler.postDelayed( this, 1000 );
                 }
             }
-        });
+        } );
     }
 
     @Override
@@ -149,14 +148,14 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onClick( View v ) {
-                Handler handler = new Handler() ;
+                Handler handler = new Handler();
 
-                handler.post(new Runnable() {
+                handler.post( new Runnable() {
                     @Override
                     public void run() {
                         EmpaStatus status = empaService.getStatus();
                         updateLabel( statusLabel, status.name() );
-                        if (EmpaStatus.READY.equals(status)) {
+                        if ( EmpaStatus.READY.equals( status ) ) {
                             updateLabel( statusLabel, status.name() + " - Turn on your device" );
                             // start scanning
                             empaService.startScanning();
@@ -165,16 +164,16 @@ public class MainActivity extends AppCompatActivity {
                             handler.postDelayed( this, 5000 );
                         } else if ( EmpaStatus.CONNECTING.equals( status ) ) {
                             handler.postDelayed( this, 5000 );
-                        } else if (EmpaStatus.CONNECTED.equals( status) ) {
+                        } else if ( EmpaStatus.CONNECTED.equals( status ) ) {
                             show();
                             // Periodically check if device is still connected
-                            handler.postDelayed(this, 5000);
-                        } else if (EmpaStatus.DISCONNECTED.equals( status )) {
+                            handler.postDelayed( this, 5000 );
+                        } else if ( EmpaStatus.DISCONNECTED.equals( status ) ) {
                             updateLabel( deviceNameLabel, "" );
                             hide();
                         }
                     }
-                });
+                } );
 
 
             }
@@ -190,7 +189,8 @@ public class MainActivity extends AppCompatActivity {
                                             @NonNull String[] permissions,
                                             @NonNull int[] grantResults ) {
 
-        if ( requestCode == REQUEST_PERMISSION_ACCESS_COARSE_LOCATION ) {// If request is cancelled, the result arrays are empty.
+        if ( requestCode ==
+             REQUEST_PERMISSION_ACCESS_COARSE_LOCATION ) {// If request is cancelled, the result arrays are empty.
             if ( grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
                 // Permission was granted, yay!
                 bindService();
@@ -198,43 +198,34 @@ public class MainActivity extends AppCompatActivity {
                 // Permission denied, boo!
                 final boolean needRationale = ActivityCompat.shouldShowRequestPermissionRationale(
                         this, Manifest.permission.ACCESS_COARSE_LOCATION );
-                new AlertDialog.Builder( this ).setTitle( "Permission required" )
-                                               .setMessage(
-                                                       "Without this permission bluetooth low energy devices cannot be found, allow it in order to connect to the device." )
-                                               .setPositiveButton( "Retry",
-                                                                   new DialogInterface.OnClickListener() {
-                                                                       public void onClick(
-                                                                               DialogInterface dialog,
-                                                                               int which ) {
-                                                                           // try again
-                                                                           if ( needRationale ) {
-                                                                               // the "never ask again" flash is not set, try again with permission request
-                                                                               bindService();
-                                                                           } else {
-                                                                               // the "never ask again" flag is set so the permission requests is disabled, try open app settings to enable the permission
-                                                                               Intent intent = new Intent(
-                                                                                       Settings.ACTION_APPLICATION_DETAILS_SETTINGS );
-                                                                               Uri uri = Uri.fromParts(
-                                                                                       "package",
-                                                                                       getPackageName(),
-                                                                                       null );
-                                                                               intent.setData(
-                                                                                       uri );
-                                                                               startActivity(
-                                                                                       intent );
-                                                                           }
-                                                                       }
-                                                                   } )
-                                               .setNegativeButton( "Exit application",
-                                                                   new DialogInterface.OnClickListener() {
-                                                                       public void onClick(
-                                                                               DialogInterface dialog,
-                                                                               int which ) {
-                                                                           // without permission exit is the only way
-                                                                           finish();
-                                                                       }
-                                                                   } )
-                                               .show();
+                new AlertDialog.Builder( this )
+                        .setTitle( "Permission required" )
+                        .setMessage(
+                                "Without this permission bluetooth low energy devices cannot be found, allow it in order to connect to the device." )
+                        .setPositiveButton( "Retry", new DialogInterface.OnClickListener() {
+                            public void onClick( DialogInterface dialog, int which ) {
+                                // try again
+                                if ( needRationale ) {
+                                    // the "never ask again" flash is not set, try again with permission request
+                                    bindService();
+                                } else {
+                                    // the "never ask again" flag is set so the permission requests is disabled, try open app settings to enable the permission
+                                    Intent intent = new Intent(
+                                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS );
+                                    Uri uri = Uri.fromParts( "package", getPackageName(), null );
+                                    intent.setData( uri );
+                                    startActivity( intent );
+                                }
+                            }
+                        } )
+                        .setNegativeButton( "Exit application",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick( DialogInterface dialog, int which ) {
+                                        // without permission exit is the only way
+                                        finish();
+                                    }
+                                } )
+                        .show();
             }
         } else {
             Log.e( "TAG", "Unknown request code: " + requestCode );
