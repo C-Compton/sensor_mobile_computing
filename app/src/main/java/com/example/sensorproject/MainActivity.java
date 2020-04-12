@@ -132,9 +132,6 @@ public class MainActivity extends AppCompatActivity {
         getReadingsButton.setOnClickListener( v -> {
 
             if ( bound ) {
-                updateLabel( accel_xLabel, "" + empaService.getX() );
-                updateLabel( accel_yLabel, "" + empaService.getX() );
-                updateLabel( accel_zLabel, "" + empaService.getX() );
                 updateLabel( bvpLabel, "" + empaService.getBvp() );
                 updateLabel( batteryLabel, "" + empaService.getLevel() );
                 updateLabel( edaLabel, "" + empaService.getGsr() );
@@ -264,17 +261,9 @@ public class MainActivity extends AppCompatActivity {
 
         dataCnt = viewBinding.dataArea;
 
-        accel_xLabel = viewBinding.accelX;
-
-        accel_yLabel = viewBinding.accelY;
-
-        accel_zLabel = viewBinding.accelZ;
-
         bvpLabel = viewBinding.bvp;
 
         edaLabel = viewBinding.eda;
-
-        ibiLabel = viewBinding.ibi;
 
         temperatureLabel = viewBinding.temperature;
 
