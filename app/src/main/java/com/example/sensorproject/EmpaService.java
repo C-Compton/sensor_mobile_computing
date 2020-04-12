@@ -227,7 +227,12 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     public void disconnect() {
         if (deviceManager != null ) {
-
+            /*
+            This and deviceManager.disconnect() attempt to write logs to a file on the Android
+            device. This file does not exist, with no way of creating manually as the file name
+            appears randomly generated. This causes the service to croak, requiring a restart
+            of the App to re-connect any Empatica devices.
+             */
             deviceManager.cancelConnection();
         }
 
