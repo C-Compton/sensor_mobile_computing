@@ -3,12 +3,9 @@ package com.example.sensorproject;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
-import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
-
-import androidx.annotation.RequiresApi;
 
 import com.empatica.empalink.ConnectionNotAllowedException;
 import com.empatica.empalink.EmpaDeviceManager;
@@ -149,7 +146,6 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
     // EmpaDataDelegate Methods
     //
 
-    @RequiresApi( api = Build.VERSION_CODES.N )
     @Override
     public void didReceiveGSR( float gsr, double timestamp ) {
         // Store past 5 minutes of data
@@ -158,11 +154,11 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
         if (this.gsrHistory.size() > 1200) { // 4Hz * 5 * 60
             this.gsrHistory.remove( 0 );
         }
-
-        if(! this.hydrationLevel.equals( weka.classification( gsr ) )) {
-            this.hydrationLevel = weka.classification( gsr );
+        HydrationLevel newHydrationLevel = weka.classification( gsr ) ;
+        if(! this.hydrationLevel.equals( newHydrationLevel )) {
+            this.hydrationLevel = newHydrationLevel;
             if (empaServiceDelegate != null ) {
-                empaServiceDelegate.onHydrationLevelChange();
+                empaServiceDelegate.onHydrationLevelChange(newHydrationLevel);
             }
         }
 
@@ -245,6 +241,6 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
     }
 
     public interface EmpaServiceDelegate {
-        void onHydrationLevelChange();
+        void onHydrationLevelChange(HydrationLevel h);
     }
 }

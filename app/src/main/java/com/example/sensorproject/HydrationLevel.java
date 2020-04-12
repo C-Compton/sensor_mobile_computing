@@ -29,6 +29,8 @@ public enum HydrationLevel {
         return label;
     }
 
+    public String getValue() { return value; }
+
     public static HydrationLevel convertFromReading( double reading) {
         if (reading == 0.0) {
             return VERY_DEHYDRATED;
@@ -41,7 +43,22 @@ public enum HydrationLevel {
         } else { return UNKNOWN_LEVEL; }
     }
 
-    @RequiresApi( api = Build.VERSION_CODES.N )
+    public static HydrationLevel convert( int label ) {
+        switch(label) {
+            case 0:
+                return VERY_DEHYDRATED;
+            case 1:
+                return SLIGHTLY_DEHYDRATED;
+            case 2:
+                return SLIGHTLY_HYDRATED;
+            case 3:
+                return WELL_HYDRATED;
+            case 4:
+            default:
+                return UNKNOWN_LEVEL;
+        }
+    }
+
     public static List<String> getLabels() {
         return Arrays
                 .stream( HydrationLevel.values() )

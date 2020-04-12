@@ -10,7 +10,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
@@ -97,18 +96,19 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
     private void bindService() {
         Intent intent = new Intent( this, EmpaService.class );
         bindService( intent, connection, Context.BIND_AUTO_CREATE );
-        empaService.setEmpaServiceDelegate( this );
         waitForBind();
     }
 
     private void waitForBind() {
         final Handler handler = new Handler();
+        final MainActivity self = this;
 
         handler.post( new Runnable() {
             @Override
             public void run() {
                 if ( bound ) {
                     viewBinding.findSensorButton.setVisibility( View.VISIBLE );
+                    empaService.setEmpaServiceDelegate( self );
                 } else {
                     handler.postDelayed( this, 1000 );
                 }
@@ -283,7 +283,8 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
     }
 
     @Override
-    public void onHydrationLevelChange() {
+    public void onHydrationLevelChange(HydrationLevel h) {
         // TODO : Do something with updated hydration level
+        Log.i("HydroHomies", "Hydration level updated to : " + h.getValue());
     }
 }
