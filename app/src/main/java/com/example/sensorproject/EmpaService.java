@@ -25,9 +25,7 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     private float gsr;
     private float bvp;
-    private float ibi;
     private float t;
-    private float x, y, z;
 
     private float level;
 
@@ -152,7 +150,6 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveIBI( float ibi, double timestamp ) {
-        this.ibi = ibi;
     }
 
     @Override
@@ -162,9 +159,6 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveAcceleration( int x, int y, int z, double timestamp ) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
     }
 
     @Override
@@ -189,24 +183,8 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
         return bvp;
     }
 
-    public float getIbi() {
-        return ibi;
-    }
-
     public float getT() {
         return t;
-    }
-
-    public float getX() {
-        return x;
-    }
-
-    public float getY() {
-        return y;
-    }
-
-    public float getZ() {
-        return z;
     }
 
     public float getLevel() {

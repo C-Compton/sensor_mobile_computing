@@ -30,56 +30,6 @@
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/accel_label"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/accel" />
-
-        <LinearLayout
-            android:id="@+id/accel_area"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/accel_x" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:width="50dp"
-                android:id="@+id/accel_x"
-                android:text="@string/emptyText"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/accel_y" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:width="50dp"
-                android:id="@+id/accel_y"
-                android:text="@string/emptyText"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/accel_z" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:width="50dp"
-                android:id="@+id/accel_z"
-                android:text="@string/emptyText"/>
-
-        </LinearLayout>
-
-        <TextView
             android:id="@+id/bvp_label"
             android:layout_marginTop="10dp"
             android:layout_width="wrap_content"
@@ -104,20 +54,7 @@
             android:layout_height="wrap_content"
             android:id="@+id/eda"
             android:text="@string/emptyText"/>
-
-        <TextView
-            android:id="@+id/ibi_label"
-            android:layout_marginTop="10dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/ibi_label" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/ibi"
-            android:text="@string/emptyText"/>
-
+        
         <TextView
             android:id="@+id/temp_label"
             android:layout_marginTop="10dp"
