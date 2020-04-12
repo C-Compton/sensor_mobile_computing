@@ -3,9 +3,12 @@ package com.example.sensorproject;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
+
+import androidx.annotation.RequiresApi;
 
 import com.empatica.empalink.ConnectionNotAllowedException;
 import com.empatica.empalink.EmpaDeviceManager;
@@ -15,13 +18,22 @@ import com.empatica.empalink.config.EmpaStatus;
 import com.empatica.empalink.delegate.EmpaDataDelegate;
 import com.empatica.empalink.delegate.EmpaStatusDelegate;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatusDelegate {
 
     private EmpaDeviceManager deviceManager = null;
 
+    private EmpaServiceDelegate empaServiceDelegate = null;
+
     private EmpaStatus status;
 
     private final IBinder binder = new EmpaServiceBinder();
+
+    private final Weka weka = new Weka();
+
+    private HydrationLevel hydrationLevel = HydrationLevel.UNKNOWN_LEVEL;
 
     private float gsr;
     private float bvp;
@@ -29,7 +41,7 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     private float level;
 
-
+    private final List<Float> gsrHistory = new ArrayList<>();
 
     public class EmpaServiceBinder extends Binder {
 
@@ -46,17 +58,16 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
         return binder;
     }
 
-
-    public EmpaService() {
-    }
-
-
     @Override
     public void onDestroy() {
         super.onDestroy();
         if (deviceManager != null ){
             deviceManager.cleanUp();
         }
+    }
+
+    public void setEmpaServiceDelegate( EmpaServiceDelegate delegate ) {
+        this.empaServiceDelegate = delegate;
     }
 
     private void initEmpaticaDeviceManager() {
@@ -84,12 +95,12 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didEstablishConnection() {
-
+        // no op
     }
 
     @Override
     public void didUpdateSensorStatus( int status, EmpaSensorType type ) {
-
+        // no op
     }
 
     @Override
@@ -121,26 +132,41 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didRequestEnableBluetooth() {
-
+        // no op
     }
 
     @Override
     public void bluetoothStateChanged() {
-
+        // no op
     }
 
     @Override
     public void didUpdateOnWristStatus( int status ) {
-
+        // no op
     }
 
     //
     // EmpaDataDelegate Methods
     //
 
+    @RequiresApi( api = Build.VERSION_CODES.N )
     @Override
     public void didReceiveGSR( float gsr, double timestamp ) {
-        this.gsr = gsr;
+        // Store past 5 minutes of data
+        this.gsrHistory.add( gsr );
+
+        if (this.gsrHistory.size() > 1200) { // 4Hz * 5 * 60
+            this.gsrHistory.remove( 0 );
+        }
+
+        if(! this.hydrationLevel.equals( weka.classification( gsr ) )) {
+            this.hydrationLevel = weka.classification( gsr );
+            if (empaServiceDelegate != null ) {
+                empaServiceDelegate.onHydrationLevelChange();
+            }
+        }
+
+        this.gsr = gsr; //
     }
 
     @Override
@@ -150,6 +176,7 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveIBI( float ibi, double timestamp ) {
+        //no op
     }
 
     @Override
@@ -159,6 +186,7 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveAcceleration( int x, int y, int z, double timestamp ) {
+        // no op
     }
 
     @Override
@@ -168,7 +196,7 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveTag( double timestamp ) {
-
+        // no op
     }
 
     //
@@ -214,5 +242,9 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
             deviceManager.cancelConnection();
         }
 
+    }
+
+    public interface EmpaServiceDelegate {
+        void onHydrationLevelChange();
     }
 }

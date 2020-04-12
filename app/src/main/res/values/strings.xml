@@ -10,4 +10,9 @@
     <string name="emptyText">-</string>
     <string name="temp_label">Temperature</string>
     <string name="battery_label">Battery</string>
+    <string name="very_dehydrated">Very Dehydrated</string>
+    <string name="slightly_dehydrated">Slightly Dehydrated</string>
+    <string name="slightly_hydrated">Slightly Hydrated</string>
+    <string name="well_hydrated">Well Hydrated</string>
+    <string name="unknown_level">Could not determine hydration level</string>
 </resources>

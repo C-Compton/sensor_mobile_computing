@@ -28,7 +28,7 @@ import android.widget.TextView;
 import com.empatica.empalink.config.EmpaStatus;
 import com.example.sensorproject.databinding.ActivityMainBinding;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements EmpaService.EmpaServiceDelegate {
 
     private EmpaService empaService;
 
@@ -52,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView edaLabel;
 
-    @SuppressWarnings( "FieldCanBeLocal" )
     private TextView ibiLabel;
 
     private TextView temperatureLabel;
@@ -98,6 +97,7 @@ public class MainActivity extends AppCompatActivity {
     private void bindService() {
         Intent intent = new Intent( this, EmpaService.class );
         bindService( intent, connection, Context.BIND_AUTO_CREATE );
+        empaService.setEmpaServiceDelegate( this );
         waitForBind();
     }
 
@@ -199,29 +199,24 @@ public class MainActivity extends AppCompatActivity {
                         .setTitle( "Permission required" )
                         .setMessage(
                                 "Without this permission bluetooth low energy devices cannot be found, allow it in order to connect to the device." )
-                        .setPositiveButton( "Retry", new DialogInterface.OnClickListener() {
-                            public void onClick( DialogInterface dialog, int which ) {
-                                // try again
-                                if ( needRationale ) {
-                                    // the "never ask again" flash is not set, try again with permission request
-                                    bindService();
-                                } else {
-                                    // the "never ask again" flag is set so the permission requests is disabled, try open app settings to enable the permission
-                                    Intent intent = new Intent(
-                                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS );
-                                    Uri uri = Uri.fromParts( "package", getPackageName(), null );
-                                    intent.setData( uri );
-                                    startActivity( intent );
-                                }
+                        .setPositiveButton( "Retry", ( dialog, which ) -> {
+                            // try again
+                            if ( needRationale ) {
+                                // the "never ask again" flash is not set, try again with permission request
+                                bindService();
+                            } else {
+                                // the "never ask again" flag is set so the permission requests is disabled, try open app settings to enable the permission
+                                Intent intent = new Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS );
+                                Uri uri = Uri.fromParts( "package", getPackageName(), null );
+                                intent.setData( uri );
+                                startActivity( intent );
                             }
                         } )
-                        .setNegativeButton( "Exit application",
-                                new DialogInterface.OnClickListener() {
-                                    public void onClick( DialogInterface dialog, int which ) {
-                                        // without permission exit is the only way
-                                        finish();
-                                    }
-                                } )
+                        .setNegativeButton( "Exit application", ( dialog, which ) -> {
+                            // without permission exit is the only way
+                            finish();
+                        } )
                         .show();
             }
         } else {
@@ -247,7 +242,6 @@ public class MainActivity extends AppCompatActivity {
         }
         super.onActivityResult( requestCode, resultCode, data );
     }
-
 
     // Update a label with some text, making sure this is run in the UI thread
     private void updateLabel( final TextView label, final String text ) {
@@ -286,5 +280,10 @@ public class MainActivity extends AppCompatActivity {
             findSensorButton.setVisibility( View.VISIBLE );
             dataCnt.setVisibility( View.INVISIBLE );
         } );
+    }
+
+    @Override
+    public void onHydrationLevelChange() {
+        // TODO : Do something with updated hydration level
     }
 }
