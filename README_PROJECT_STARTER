@@ -1,0 +1,16 @@
+Chris Compton
+Jooseppi Luna
+Nandan Kulkarni
+
+Tasks Completed:
+
+Preliminary WEKA model created and imported into code.
+
+GSR sensor readings sent through WEKA API with results logged in the
+app's log files.
+
+BVP sensor readings are collected in 10 second increments.
+
+Incomplete:
+
+Did not successfully determine HR from the BVP readings. 
