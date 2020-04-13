@@ -34,12 +34,12 @@
             android:layout_marginTop="10dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/bvp_label" />
+            android:text="@string/hr_label" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/bvp"
+            android:id="@+id/hr"
             android:text="@string/emptyText"/>
 
         <TextView

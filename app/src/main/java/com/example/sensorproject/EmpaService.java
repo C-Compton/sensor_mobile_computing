@@ -3,7 +3,9 @@ package com.example.sensorproject;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -14,22 +16,40 @@ import com.empatica.empalink.config.EmpaSensorType;
 import com.empatica.empalink.config.EmpaStatus;
 import com.empatica.empalink.delegate.EmpaDataDelegate;
 import com.empatica.empalink.delegate.EmpaStatusDelegate;
+import com.google.common.collect.ImmutableList;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatusDelegate {
 
     private EmpaDeviceManager deviceManager = null;
 
+    private EmpaServiceDelegate empaServiceDelegate = null;
+
     private EmpaStatus status;
 
     private final IBinder binder = new EmpaServiceBinder();
 
+    private final Weka weka = new Weka();
+
+    private HydrationLevel hydrationLevel = HydrationLevel.UNKNOWN_LEVEL;
+
+    // GSR sensor readings (EDA)
     private float gsr;
-    private float bvp;
+
+    // Skin Temperature reading
     private float t;
 
+    // Empatica device battery level
     private float level;
 
+    private final List<Float> bvpHistory = new ArrayList<>();
 
+    private double lastBvpTimestamp = 0.0;
+
+    private final List<Float> gsrHistory = new ArrayList<>();
 
     public class EmpaServiceBinder extends Binder {
 
@@ -46,17 +66,16 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
         return binder;
     }
 
-
-    public EmpaService() {
-    }
-
-
     @Override
     public void onDestroy() {
         super.onDestroy();
         if (deviceManager != null ){
             deviceManager.cleanUp();
         }
+    }
+
+    public void setEmpaServiceDelegate( EmpaServiceDelegate delegate ) {
+        this.empaServiceDelegate = delegate;
     }
 
     private void initEmpaticaDeviceManager() {
@@ -84,12 +103,12 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didEstablishConnection() {
-
+        // no op
     }
 
     @Override
     public void didUpdateSensorStatus( int status, EmpaSensorType type ) {
-
+        // no op
     }
 
     @Override
@@ -121,17 +140,17 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didRequestEnableBluetooth() {
-
+        // no op
     }
 
     @Override
     public void bluetoothStateChanged() {
-
+        // no op
     }
 
     @Override
     public void didUpdateOnWristStatus( int status ) {
-
+        // no op
     }
 
     //
@@ -140,16 +159,47 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveGSR( float gsr, double timestamp ) {
+        // Store past 5 minutes of data
+        gsrHistory.add( gsr );
+
+        if (gsrHistory.size() > 1200) { // 4Hz * 5 * 60
+            gsrHistory.remove( 0 );
+        }
+        HydrationLevel newHydrationLevel = weka.classification( gsr ) ;
+        if(! hydrationLevel.equals( newHydrationLevel )) {
+            hydrationLevel = newHydrationLevel;
+            if (empaServiceDelegate != null ) {
+                empaServiceDelegate.onHydrationLevelChange(newHydrationLevel);
+            }
+        }
+
         this.gsr = gsr;
     }
 
     @Override
     public void didReceiveBVP( float bvp, double timestamp ) {
-        this.bvp = bvp;
+
+        bvpHistory.add(bvp);
+
+        if (bvpHistory.size() > 640) { // 64Hz * 10s
+            bvpHistory.remove( 0 );
+        }
+
+        if ( empaServiceDelegate != null &&
+             bvpHistory.size() >= 640 ) {
+            double timeDiff = timestamp - lastBvpTimestamp;
+            // We have 10 seconds of data, so we can
+            // now begin periodically calculating a HR
+            if ( timeDiff >= 2.0) {
+                calculateHeartRate();
+                lastBvpTimestamp = timestamp;
+            }
+        }
     }
 
     @Override
     public void didReceiveIBI( float ibi, double timestamp ) {
+        //no op
     }
 
     @Override
@@ -159,6 +209,7 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveAcceleration( int x, int y, int z, double timestamp ) {
+        // no op
     }
 
     @Override
@@ -168,7 +219,16 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveTag( double timestamp ) {
+        // no op
+    }
 
+    private void calculateHeartRate() {
+
+        // TODO : Find or develop a working algorithm
+
+        if( empaServiceDelegate != null ) {
+            empaServiceDelegate.onHeartRateUpdated( 70 );
+        }
     }
 
     //
@@ -177,10 +237,6 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     public float getGsr() {
         return gsr;
-    }
-
-    public float getBvp() {
-        return bvp;
     }
 
     public float getT() {
@@ -214,5 +270,10 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
             deviceManager.cancelConnection();
         }
 
+    }
+
+    public interface EmpaServiceDelegate {
+        void onHydrationLevelChange(HydrationLevel h);
+        void onHeartRateUpdated( long heartRate );
     }
 }
