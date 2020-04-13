@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
 
     private TextView accel_zLabel;
 
-    private TextView bvpLabel;
+    private TextView hrLabel;
 
     private TextView edaLabel;
 
@@ -132,7 +132,6 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
         getReadingsButton.setOnClickListener( v -> {
 
             if ( bound ) {
-                updateLabel( bvpLabel, "" + empaService.getBvp() );
                 updateLabel( batteryLabel, "" + empaService.getLevel() );
                 updateLabel( edaLabel, "" + empaService.getGsr() );
                 updateLabel( temperatureLabel, "" + empaService.getT() );
@@ -255,7 +254,7 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
 
         dataCnt = viewBinding.dataArea;
 
-        bvpLabel = viewBinding.bvp;
+        hrLabel = viewBinding.hr;
 
         edaLabel = viewBinding.eda;
 
@@ -286,5 +285,10 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
     public void onHydrationLevelChange(HydrationLevel h) {
         // TODO : Do something with updated hydration level
         Log.i("HydroHomies", "Hydration level updated to : " + h.getValue());
+    }
+
+    @Override
+    public void onHeartRateUpdated(long heartRate) {
+        updateLabel( hrLabel, String.valueOf(heartRate) );
     }
 }
