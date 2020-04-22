@@ -3,9 +3,7 @@ package com.example.sensorproject;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -16,10 +14,8 @@ import com.empatica.empalink.config.EmpaSensorType;
 import com.empatica.empalink.config.EmpaStatus;
 import com.empatica.empalink.delegate.EmpaDataDelegate;
 import com.empatica.empalink.delegate.EmpaStatusDelegate;
-import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatusDelegate {
@@ -36,20 +32,13 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     private HydrationLevel hydrationLevel = HydrationLevel.UNKNOWN_LEVEL;
 
-    // GSR sensor readings (EDA)
-    private float gsr;
-
     // Skin Temperature reading
     private float t;
 
     // Empatica device battery level
     private float level;
 
-    private final List<Float> bvpHistory = new ArrayList<>();
-
-    private double lastBvpTimestamp = 0.0;
-
-    private final List<Float> gsrHistory = new ArrayList<>();
+    private final List<Double> gsrHistory = new ArrayList<>();
 
     public class EmpaServiceBinder extends Binder {
 
@@ -160,41 +149,33 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
     @Override
     public void didReceiveGSR( float gsr, double timestamp ) {
         // Store past 5 minutes of data
-        gsrHistory.add( gsr );
+        gsrHistory.add( (double) gsr );
 
-        if (gsrHistory.size() > 1200) { // 4Hz * 5 * 60
+        if (gsrHistory.size() < 8) { // Take rolling aggregates across 2 seconds of data
+            return;
+        }
+        
+        if (gsrHistory.size() > 8) {
             gsrHistory.remove( 0 );
         }
-        HydrationLevel newHydrationLevel = weka.classification( gsr ) ;
+
+        double min = min(gsrHistory);
+        double max = max(gsrHistory);
+        double var = var(gsrHistory);
+        double std = std(gsrHistory);
+
+        HydrationLevel newHydrationLevel = weka.classification( min, max, var, std ) ;
         if(! hydrationLevel.equals( newHydrationLevel )) {
             hydrationLevel = newHydrationLevel;
             if (empaServiceDelegate != null ) {
                 empaServiceDelegate.onHydrationLevelChange(newHydrationLevel);
             }
         }
-
-        this.gsr = gsr;
     }
 
     @Override
     public void didReceiveBVP( float bvp, double timestamp ) {
-
-        bvpHistory.add(bvp);
-
-        if (bvpHistory.size() > 640) { // 64Hz * 10s
-            bvpHistory.remove( 0 );
-        }
-
-        if ( empaServiceDelegate != null &&
-             bvpHistory.size() >= 640 ) {
-            double timeDiff = timestamp - lastBvpTimestamp;
-            // We have 10 seconds of data, so we can
-            // now begin periodically calculating a HR
-            if ( timeDiff >= 2.0) {
-                calculateHeartRate();
-                lastBvpTimestamp = timestamp;
-            }
-        }
+        // no op
     }
 
     @Override
@@ -222,22 +203,9 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
         // no op
     }
 
-    private void calculateHeartRate() {
-
-        // TODO : Find or develop a working algorithm
-
-        if( empaServiceDelegate != null ) {
-            empaServiceDelegate.onHeartRateUpdated( 70 );
-        }
-    }
-
     //
     // Standard Getters
     //
-
-    public float getGsr() {
-        return gsr;
-    }
 
     public float getT() {
         return t;
@@ -258,6 +226,55 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
     public void startScanning() {
         deviceManager.startScanning();
     }
+
+    private double min(List<Double> data) {
+        if( data == null || data.isEmpty()) {
+            return 0.0;
+        }
+
+        return data.stream()
+                .reduce(Double.MAX_VALUE, (a, b) -> a.compareTo(b) <= 0 ? a : b);
+    }
+
+    private double max(List<Double> data) {
+        if (data == null || data.isEmpty()) {
+            return 0.0;
+        }
+
+        return data.stream()
+                .reduce(Double.MIN_VALUE, (a, b) -> a.compareTo(b) <= 0 ? b : a);
+    }
+
+    private double mean(List<Double> data) {
+        if ( data == null || data.isEmpty() ){
+            return 0.0;
+        }
+
+        return data.stream()
+                .mapToDouble(i -> i)
+                .average()
+                .orElse(0.0);
+    }
+
+    private double var(List<Double> data) {
+        if ( data == null ) {
+            return 0.0;
+        }
+        double avg = mean(data);
+        double s = data.stream()
+                .reduce(0.0, (a, b) -> a + Math.pow(b - avg, 2));
+
+        return s / data.size();
+    }
+
+    private double std(List<Double> data) {
+        if (data == null || data.isEmpty()) {
+            return 0.0;
+        }
+        return Math.sqrt(var(data));
+    }
+
+
 
     public void disconnect() {
         if (deviceManager != null ) {
