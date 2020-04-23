@@ -173,10 +173,11 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
                 handler.post( new Runnable() {
                     @Override
                     public void run() {
-                        // Forcing the app to think that I am connected so I can get to the main
-                        // interface. This is for testing, not for deployment -- JJL
-                        // EmpaStatus status = empaService.getStatus();
-                        EmpaStatus status = EmpaStatus.CONNECTED;
+                        // Replacing the current EmpaStatus declaration with the commented
+                        // one lets you run the app without connecting to bluetooth --
+                        // useful if you want to debug things unrelated to the device
+                        // EmpaStatus status = EmpaStatus.CONNECTED;
+                        EmpaStatus status = empaService.getStatus();
                         updateLabel( statusLabel, status.name() );
                         if ( EmpaStatus.READY.equals( status ) ) {
                             updateLabel( statusLabel, status.name() + " - Turn on your device" );
@@ -314,7 +315,7 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
 
         // Create an explicit intent for an Activity in your app
         Intent intent = new Intent(this, MainActivity.class);
-        //intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        // This makes it so that the app doesn't restart when you click the notification
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
