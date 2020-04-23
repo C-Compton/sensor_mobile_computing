@@ -173,6 +173,7 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
                 handler.post( new Runnable() {
                     @Override
                     public void run() {
+                        // +TODO delete this before final submission
                         // Replacing the current EmpaStatus declaration with the commented
                         // one lets you run the app without connecting to bluetooth --
                         // useful if you want to debug things unrelated to the device
@@ -311,8 +312,6 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
 
     @Override
     public void onHydrationLevelChange(HydrationLevel h) {
-        // TODO : Do something with updated hydration level
-
         // Create an explicit intent for an Activity in your app
         Intent intent = new Intent(this, MainActivity.class);
         // This makes it so that the app doesn't restart when you click the notification
@@ -331,9 +330,7 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
 
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
 
-        // notificationId is a unique int for each notification that you must define
-        int notificationId = 603921;
-        notificationManager.notify(notificationId, builder.build());
+        notificationManager.notify((int)System.currentTimeMillis(), builder.build());
 
         Log.i("HydroHomies", "Hydration level updated to : " + h.getValue());
     }
