@@ -157,7 +157,6 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
 
             if ( bound ) {
                 updateLabel( batteryLabel, "" + empaService.getLevel() );
-                updateLabel( edaLabel, "" + empaService.getGsr() );
                 updateLabel( temperatureLabel, "" + empaService.getT() );
             }
         } );

@@ -1,7 +1,8 @@
 package com.example.sensorproject;
 
+import android.util.Log;
+
 import java.util.ArrayList;
-import java.util.concurrent.ThreadLocalRandom;
 
 import weka.classifiers.Classifier;
 import weka.core.Attribute;
@@ -13,34 +14,36 @@ import static weka.core.SerializationHelper.read;
 
 public class Weka {
 
-    public HydrationLevel classification( float eda) {
+    public HydrationLevel classification( double min, double max, double var, double std) {
         double [] predicted_class = new double[2];
         predicted_class[0] = 0.0;
         predicted_class[1] = 0.0;
 
-        // TODO : Uncomment when able
         try {
-
             Classifier cls;
-
-            // TODO : Generate model and place in resources / assets directory
-            cls = (Classifier) read(App.getContext().getAssets().open("WEKA_RandomForest_model1.model"));
+            cls = (Classifier) read(App.getContext().getAssets().open("WEKA_BayesNet_model1_91_67_Agg_EDA_0_1_2_3.model"));
 
             ArrayList<Attribute> attributes = new ArrayList<>();
 
             // TODO : Verify that these are correct attributes
-            attributes.add(new Attribute("Readings", 0));
-            attributes.add(new Attribute("Label", HydrationLevel.getLabels()));
+            attributes.add(new Attribute("min", 0));
+            attributes.add(new Attribute("max", 1));
+            attributes.add(new Attribute("var", 2));
+            attributes.add(new Attribute("std", 3));
 
-            Instance instance = new SparseInstance( 1);
-            instance.setValue(attributes.get(0), eda);
+            attributes.add(new Attribute("label", HydrationLevel.getLabels()));
+
+            Instance instance = new SparseInstance( 4);
+            instance.setValue(attributes.get(0), min);
+            instance.setValue(attributes.get(1), max);
+            instance.setValue(attributes.get(2), var);
+            instance.setValue(attributes.get(3), std);
 
             Instances dataSetConfiguration;
 
-            // TODO : Verify instance name is correct
             dataSetConfiguration = new Instances("level.hydration", attributes, 0);
 
-            dataSetConfiguration.setClassIndex( 1 );
+            dataSetConfiguration.setClassIndex( 4 );
             instance.setDataset(dataSetConfiguration);
 
             double[] distribution;
@@ -48,6 +51,7 @@ public class Weka {
             predicted_class[0] = cls.classifyInstance( instance );
             predicted_class[1] = Math.max(distribution[0], distribution[1]) * 100;
 
+            Log.d("WEKA", "Predicted class: " + predicted_class[0] + " Confidence score: " + predicted_class[1]);
         } catch (Exception e) {
             e.printStackTrace();
         }
