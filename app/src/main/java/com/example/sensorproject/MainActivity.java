@@ -1,19 +1,18 @@
 package com.example.sensorproject;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -23,6 +22,13 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 
 import com.empatica.empalink.config.EmpaStatus;
 import com.example.sensorproject.databinding.ActivityMainBinding;
@@ -38,6 +44,8 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
     private static final int REQUEST_ENABLE_BT = 1;
 
     private static final int REQUEST_PERMISSION_ACCESS_COARSE_LOCATION = 1;
+
+    private static final String CHANNEL_ID = "HEALTH";
 
     private static final String PERMISSION_STRING = Manifest.permission.ACCESS_COARSE_LOCATION;
 
@@ -80,11 +88,27 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
         }
     };
 
+    private void createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.channel_name);
+            String description = getString(R.string.channel_description);
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
+
     @Override
     public void onStart() {
         super.onStart();
         if ( ContextCompat.checkSelfPermission( this, PERMISSION_STRING ) !=
-             PackageManager.PERMISSION_GRANTED ) {
+                PackageManager.PERMISSION_GRANTED ) {
             ActivityCompat.requestPermissions( this,
                     new String[] { Manifest.permission.ACCESS_COARSE_LOCATION },
                     REQUEST_PERMISSION_ACCESS_COARSE_LOCATION );
@@ -149,6 +173,8 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
                 handler.post( new Runnable() {
                     @Override
                     public void run() {
+                        // TODO : Used for sensor-less testing. Remove from final submission
+                        // EmpaStatus status = EmpaStatus.CONNECTED;
                         EmpaStatus status = empaService.getStatus();
                         updateLabel( statusLabel, status.name() );
                         if ( EmpaStatus.READY.equals( status ) ) {
@@ -283,7 +309,26 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
 
     @Override
     public void onHydrationLevelChange(HydrationLevel h) {
-        // TODO : Do something with updated hydration level
+        // Create an explicit intent for an Activity in your app
+        Intent intent = new Intent(this, MainActivity.class);
+        // This makes it so that the app doesn't restart when you click the notification
+        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+
+        createNotificationChannel();
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.notification_icon)
+                .setContentTitle("Hydration Alert")
+                .setContentText("You are now " + h.value)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+
+        notificationManager.notify((int)System.currentTimeMillis(), builder.build());
+
         Log.i("HydroHomies", "Hydration level updated to : " + h.getValue());
     }
 
@@ -291,4 +336,21 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
     public void onHeartRateUpdated(long heartRate) {
         updateLabel( hrLabel, String.valueOf(heartRate) );
     }
+
+    public void vHydratedButtonClickAction(View theButton){
+        onHydrationLevelChange(HydrationLevel.WELL_HYDRATED);
+    }
+
+    public void sHydratedButtonClickAction(View theButton){
+        onHydrationLevelChange(HydrationLevel.SLIGHTLY_HYDRATED);
+    }
+
+    public void sDehydratedButtonClickAction(View theButton){
+        onHydrationLevelChange(HydrationLevel.SLIGHTLY_DEHYDRATED);
+    }
+
+    public void vDehydratedButtonClickAction(View theButton) {
+        onHydrationLevelChange(HydrationLevel.VERY_DEHYDRATED);
+    }
+
 }

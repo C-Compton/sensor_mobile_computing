@@ -25,7 +25,7 @@
         android:visibility="invisible"
         android:id="@+id/dataArea"
         android:layout_width="match_parent"
-        android:layout_height="440dp"
+        android:layout_height="450dp"
         android:layout_below="@id/deviceName"
         android:orientation="vertical">
 
@@ -101,6 +101,34 @@
             android:text="STOP STREAMING"
             android:layout_width="match_parent"
             android:layout_height="44dp" />
+
+        <Button
+            android:id="@+id/vHydratedButton"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
+            android:onClick="vHydratedButtonClickAction"
+            android:text="@string/well_hydrated" />
+
+        <Button
+            android:id="@+id/sHydratedButton"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
+            android:onClick="sHydratedButtonClickAction"
+            android:text="@string/slightly_hydrated" />
+
+        <Button
+            android:id="@+id/sDehydratedButton"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
+            android:onClick="sDehydratedButtonClickAction"
+            android:text="@string/slightly_dehydrated" />
+
+        <Button
+            android:id="@+id/vDehydratedButton"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
+            android:onClick="vDehydratedButtonClickAction"
+            android:text="@string/very_dehydrated" />
 
     </LinearLayout>
 
