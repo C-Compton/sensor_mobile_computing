@@ -173,10 +173,7 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
                 handler.post( new Runnable() {
                     @Override
                     public void run() {
-                        // +TODO delete this before final submission
-                        // Replacing the current EmpaStatus declaration with the commented
-                        // one lets you run the app without connecting to bluetooth --
-                        // useful if you want to debug things unrelated to the device
+                        // TODO : Used for sensor-less testing. Remove from final submission
                         // EmpaStatus status = EmpaStatus.CONNECTED;
                         EmpaStatus status = empaService.getStatus();
                         updateLabel( statusLabel, status.name() );
