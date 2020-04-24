@@ -21,7 +21,7 @@ public class Weka {
 
         try {
             Classifier cls;
-            cls = (Classifier) read(App.getContext().getAssets().open("WEKA_RandomForest_model1.model"));
+            cls = (Classifier) read(App.getContext().getAssets().open("WEKA_BayesNet_model1_91_67_Agg_EDA_0_1_2_3.model"));
 
             ArrayList<Attribute> attributes = new ArrayList<>();
 
