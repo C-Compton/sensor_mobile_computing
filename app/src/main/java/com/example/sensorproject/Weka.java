@@ -14,6 +14,7 @@ import static weka.core.SerializationHelper.read;
 
 public class Weka {
 
+    // TODO : Return Pair of classification and confidence
     public HydrationLevel classification( double min, double max, double var, double std) {
         double [] predicted_class = new double[2];
         predicted_class[0] = 0.0;
@@ -21,7 +22,7 @@ public class Weka {
 
         try {
             Classifier cls;
-            cls = (Classifier) read(App.getContext().getAssets().open("WEKA_BayesNet_model1_91_67_Agg_EDA_0_1_2_3.model"));
+            cls = (Classifier) read(App.getContext().getAssets().open("weka_RF_model5_0_0_0_1.model"));
 
             ArrayList<Attribute> attributes = new ArrayList<>();
 

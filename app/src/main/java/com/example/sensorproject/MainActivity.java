@@ -340,14 +340,6 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
         onHydrationLevelChange(HydrationLevel.WELL_HYDRATED);
     }
 
-    public void sHydratedButtonClickAction(View theButton){
-        onHydrationLevelChange(HydrationLevel.SLIGHTLY_HYDRATED);
-    }
-
-    public void sDehydratedButtonClickAction(View theButton){
-        onHydrationLevelChange(HydrationLevel.SLIGHTLY_DEHYDRATED);
-    }
-
     public void vDehydratedButtonClickAction(View theButton) {
         onHydrationLevelChange(HydrationLevel.VERY_DEHYDRATED);
     }
