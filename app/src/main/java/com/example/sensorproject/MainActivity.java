@@ -182,8 +182,8 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
                     @Override
                     public void run() {
                         // TODO : Used for sensor-less testing. Remove from final submission
-                        EmpaStatus status = EmpaStatus.CONNECTED;
-                        // EmpaStatus status = empaService.getStatus();
+                        // EmpaStatus status = EmpaStatus.CONNECTED;
+                        EmpaStatus status = empaService.getStatus();
                         if ( EmpaStatus.READY.equals( status ) ) {
                             // start scanning
                             updateLabel(deviceStatus, R.string.turn_on_dev);
