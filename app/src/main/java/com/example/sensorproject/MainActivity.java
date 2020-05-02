@@ -361,7 +361,6 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
 
     @Override
     public void onHeartRateUpdated(long heartRate) {
-//        updateLabel( hrLabel, String.valueOf(heartRate) );
     }
 
 }

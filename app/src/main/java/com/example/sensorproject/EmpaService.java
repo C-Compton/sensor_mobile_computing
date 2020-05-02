@@ -148,13 +148,14 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveGSR( float gsr, double timestamp ) {
-        // Store past 5 minutes of data
+
         gsrHistory.add( (double) gsr );
 
         if (gsrHistory.size() < 8) { // Take rolling aggregates across 2 seconds of data
             return;
         }
-        
+
+        // Rolling history of 2 seconds of sensor readings
         if (gsrHistory.size() > 8) {
             gsrHistory.remove( 0 );
         }
@@ -164,6 +165,7 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
         double var = var(gsrHistory);
         double std = std(gsrHistory);
 
+        // TODO : Get returned Pair of classification and confidence. Ensure confidence meets desired level before attempting to change status
         HydrationLevel newHydrationLevel = weka.classification( min, max, var, std ) ;
         if(! hydrationLevel.equals( newHydrationLevel )) {
             hydrationLevel = newHydrationLevel;
