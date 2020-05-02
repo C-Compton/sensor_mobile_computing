@@ -211,7 +211,7 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
         } );
 
         // TODO this is just for debugging/demos, changes the hydration level every minute
-        changeHydrationLevelEveryMin();
+        // changeHydrationLevelEveryMin();
     }
 
     @Override
@@ -293,8 +293,8 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
     }
 
     // Update a label with some text, making sure this is run in the UI thread
-    private void updateLabel( final TextView label, final int text ) {
-        runOnUiThread( () -> label.setText( text ) );
+    private void updateLabel( final TextView label, final int stringAttribute ) {
+        runOnUiThread( () -> label.setText( stringAttribute ) );
     }
 
     private void initUiComponents() {
@@ -342,7 +342,6 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
-        // TODO Can this be done elsewhere/only once?
         createNotificationChannel();
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
@@ -359,6 +358,7 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
         Log.i("HydroHomies", "Hydration level updated to : " + h.getValue());
     }
 
+    // This needs to be here to satisfy EmpaService, but we aren't actually using it
     @Override
     public void onHeartRateUpdated(long heartRate) {
     }
