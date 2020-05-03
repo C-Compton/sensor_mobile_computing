@@ -79,14 +79,9 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didUpdateStatus( EmpaStatus status ) {
-        this.status = status;
-        // The device manager is ready for use
-        if ( status == EmpaStatus.READY ) {
-            // Start scanning
-            Log.i( "TAG", "Device manager ready. Start scanning..." );
-            deviceManager.startScanning();
-            // The device manager has established a connection
-
+        Log.i("EMPASTATUS", "Status : " + status.name());
+        if( empaServiceDelegate != null) {
+            empaServiceDelegate.onDeviceStatusChange( status );
         }
     }
 
@@ -202,8 +197,8 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
     public void didReceiveBatteryLevel( float level, double timestamp ) {
         // If the new value differs from the old, update old value
         // and call delegate to update the UI
-        if ( this.batteryLevel != level) {
-            this.batteryLevel = level;
+        if (empaServiceDelegate != null &&  batteryLevel != level) {
+            batteryLevel = level;
             empaServiceDelegate.onBatteryLevelChange(level);
         }
     }
@@ -294,5 +289,6 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
     public interface EmpaServiceDelegate {
         void onHydrationLevelChange(HydrationLevel h);
         void onBatteryLevelChange(float level);
+        void onDeviceStatusChange(EmpaStatus status);
     }
 }
