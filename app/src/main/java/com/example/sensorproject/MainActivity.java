@@ -40,7 +40,7 @@ import com.example.sensorproject.databinding.ActivityMainBinding;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity implements EmpaService.EmpaServiceDelegate {
+public class MainActivity<U extends View> extends AppCompatActivity implements EmpaService.EmpaServiceDelegate {
 
     private EmpaService empaService;
 
@@ -297,6 +297,10 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
         runOnUiThread( () -> label.setText( stringAttribute ) );
     }
 
+    private void updateImageView( final ImageView view, final int attribute ) {
+        runOnUiThread( () -> view.setImageResource(attribute) );
+    }
+
     private void initUiComponents() {
         // Initialize vars that reference UI components
         youAreLabel = viewBinding.youAre;
@@ -326,16 +330,11 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
     @Override
     public void onHydrationLevelChange(HydrationLevel h) {
         // Set background image and hydration level text based on hydration level
-        if(h.equals(HydrationLevel.WELL_HYDRATED)) {
-            youAreLabel.setText(R.string.you_are);
-            hydrationLevelLabel.setText(R.string.well_hydrated);
-            background.setImageResource(R.drawable.hydrated_background);
-        }
-        else if(h.equals(HydrationLevel.VERY_DEHYDRATED)) {
-            youAreLabel.setText(R.string.you_are);
-            hydrationLevelLabel.setText(R.string.very_dehydrated);
-            background.setImageResource(R.drawable.dehydrated_background);
-        }
+        updateLabel(youAreLabel, R.string.you_are);
+        updateLabel(hydrationLevelLabel, h.getResourceId());
+        updateImageView( background, HydrationLevel.WELL_HYDRATED.equals( h ) ?
+                                     R.drawable.hydrated_background :
+                                     R.drawable.dehydrated_background);
 
         // Send notification to alert user about changed hydration level
         Intent intent = new Intent(this, MainActivity.class);
@@ -347,7 +346,7 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.notification_icon)
                 .setContentTitle("Hydration Alert")
-                .setContentText("You are " + h.value)
+                .setContentText("You are " + h.resourceId )
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
@@ -355,7 +354,7 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
         notificationManager.notify((int)System.currentTimeMillis(), builder.build());
 
-        Log.i("HydroHomies", "Hydration level updated to : " + h.getValue());
+        Log.i("HydroHomies", "Hydration level updated to : " + h.getResourceId());
     }
 
     // This needs to be here to satisfy EmpaService, but we aren't actually using it

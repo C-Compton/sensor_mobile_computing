@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+import android.util.Pair;
 import android.widget.Toast;
 
 import com.empatica.empalink.ConnectionNotAllowedException;
@@ -166,7 +167,11 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
         double std = std(gsrHistory);
 
         // TODO : Get returned Pair of classification and confidence. Ensure confidence meets desired level before attempting to change status
-        HydrationLevel newHydrationLevel = weka.classification( min, max, var, std ) ;
+        Pair<Double, Double> results = weka.classification( min, max, var, std ) ;
+        if (results.second < 90.0 ) {
+            return;
+        }
+        HydrationLevel newHydrationLevel = HydrationLevel.convert( results.first.intValue() );
         if(! hydrationLevel.equals( newHydrationLevel )) {
             hydrationLevel = newHydrationLevel;
             if (empaServiceDelegate != null ) {

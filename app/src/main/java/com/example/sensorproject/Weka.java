@@ -1,6 +1,7 @@
 package com.example.sensorproject;
 
 import android.util.Log;
+import android.util.Pair;
 
 import java.util.ArrayList;
 
@@ -15,7 +16,7 @@ import static weka.core.SerializationHelper.read;
 public class Weka {
 
     // TODO : Return Pair of classification and confidence
-    public HydrationLevel classification( double min, double max, double var, double std) {
+    public Pair<Double, Double> classification( double min, double max, double var, double std) {
         double [] predicted_class = new double[2];
         predicted_class[0] = 0.0;
         predicted_class[1] = 0.0;
@@ -57,6 +58,6 @@ public class Weka {
             e.printStackTrace();
         }
 
-        return HydrationLevel.convertFromReading( predicted_class[0] );
+        return new Pair<>(predicted_class[0], predicted_class[1]);
     }
 }
