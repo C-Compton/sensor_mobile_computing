@@ -22,7 +22,7 @@ public class Weka {
 
         try {
             Classifier cls;
-            cls = (Classifier) read(App.getContext().getAssets().open("weka_RF_model5_0_0_0_1.model"));
+            cls = (Classifier) read(App.getContext().getAssets().open("weka_DT_model2_0_0_1_1.model"));
 
             ArrayList<Attribute> attributes = new ArrayList<>();
 
