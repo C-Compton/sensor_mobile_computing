@@ -186,21 +186,22 @@ public class MainActivity<U extends View> extends AppCompatActivity implements E
                         EmpaStatus status = empaService.getStatus();
                         if ( EmpaStatus.READY.equals( status ) ) {
                             // start scanning
-                            updateLabel(deviceStatus, R.string.turn_on_dev);
+                            updateLabel(deviceStatus, getString(R.string.turn_on_dev));
                             empaService.startScanning();
                             hide();
                             // Periodically check if device is still connected
                             handler.postDelayed( this, 5000 );
                         } else if ( EmpaStatus.CONNECTING.equals( status ) ) {
                             handler.postDelayed( this, 5000 );
-                            updateLabel(deviceStatus, R.string.dev_connecting);
+                            updateLabel(deviceStatus, getString(R.string.dev_connecting));
                         } else if ( EmpaStatus.CONNECTED.equals( status ) ) {
                             show();
-                            updateLabel(deviceStatus,R.string.battery_lev  + (int)empaService.getLevel());
+                            // Clear deviceStatus for now
+                            updateLabel(deviceStatus,getString(R.string.empty_string));
                             // Periodically check if device is still connected
                             handler.postDelayed( this, 5000 );
                         } else if ( EmpaStatus.DISCONNECTED.equals( status ) ) {
-                            updateLabel(deviceStatus, R.string.dev_not_connected);
+                            updateLabel(deviceStatus, getString(R.string.dev_not_connected));
                             hide();
                         }
                     }
@@ -293,8 +294,8 @@ public class MainActivity<U extends View> extends AppCompatActivity implements E
     }
 
     // Update a label with some text, making sure this is run in the UI thread
-    private void updateLabel( final TextView label, final int stringAttribute ) {
-        runOnUiThread( () -> label.setText( stringAttribute ) );
+    private void updateLabel( final TextView label, final String text ) {
+        runOnUiThread( () -> label.setText( text ) );
     }
 
     private void updateImageView( final ImageView view, final int attribute ) {
@@ -330,8 +331,8 @@ public class MainActivity<U extends View> extends AppCompatActivity implements E
     @Override
     public void onHydrationLevelChange(HydrationLevel h) {
         // Set background image and hydration level text based on hydration level
-        updateLabel(youAreLabel, R.string.you_are);
-        updateLabel(hydrationLevelLabel, h.getResourceId());
+        updateLabel(youAreLabel, getString(R.string.you_are));
+        updateLabel(hydrationLevelLabel, h.getValue());
         updateImageView( background, HydrationLevel.WELL_HYDRATED.equals( h ) ?
                                      R.drawable.hydrated_background :
                                      R.drawable.dehydrated_background);
@@ -346,7 +347,7 @@ public class MainActivity<U extends View> extends AppCompatActivity implements E
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.notification_icon)
                 .setContentTitle("Hydration Alert")
-                .setContentText("You are " + h.resourceId )
+                .setContentText("You are " + h.value )
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
@@ -354,12 +355,13 @@ public class MainActivity<U extends View> extends AppCompatActivity implements E
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
         notificationManager.notify((int)System.currentTimeMillis(), builder.build());
 
-        Log.i("HydroHomies", "Hydration level updated to : " + h.getResourceId());
+        Log.i("HydroHomies", "Hydration level updated to : " + h.getValue());
     }
 
-    // This needs to be here to satisfy EmpaService, but we aren't actually using it
     @Override
-    public void onHeartRateUpdated(long heartRate) {
+    public void onBatteryLevelChange(float level) {
+        // Battery level has changed. Update device status to inform user
+        updateLabel(deviceStatus,getString(R.string.battery_lev, level));
     }
 
 }

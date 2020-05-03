@@ -5,16 +5,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public enum HydrationLevel {
-    WELL_HYDRATED(R.string.well_hydrated,0),
-    VERY_DEHYDRATED(R.string.very_dehydrated, 1),
-    UNKNOWN_LEVEL(R.string.unknown_level, 2);
+    WELL_HYDRATED(App.getContext().getString(R.string.well_hydrated),0),
+    VERY_DEHYDRATED(App.getContext().getString(R.string.very_dehydrated), 1),
+    UNKNOWN_LEVEL(App.getContext().getString(R.string.unknown_level), 2);
 
-    final int resourceId;
+    final String value;
 
     final int label;
 
-    HydrationLevel( int resourceId, int label ) {
-        this.resourceId = resourceId;
+    HydrationLevel( String value, int label ) {
+        this.value = value;
         this.label = label;
     }
 
@@ -22,7 +22,7 @@ public enum HydrationLevel {
         return label;
     }
 
-    public int getResourceId() { return resourceId; }
+    public String getValue() { return value; }
 
     public static HydrationLevel convertFromReading( double reading) {
         if (reading == 0.0) {

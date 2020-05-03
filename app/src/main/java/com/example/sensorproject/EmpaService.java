@@ -33,11 +33,10 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     private HydrationLevel hydrationLevel = HydrationLevel.UNKNOWN_LEVEL;
 
-    // Skin Temperature reading
-    private float t;
-
     // Empatica device battery level
-    private float level;
+    // Device only reports battery level when it changes significantly.
+    // so start at min float value to ensure different form value to be reported
+    private float batteryLevel = Float.MIN_VALUE;
 
     private final List<Double> gsrHistory = new ArrayList<>();
 
@@ -191,7 +190,7 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveTemperature( float t, double timestamp ) {
-        this.t = t;
+        // no op
     }
 
     @Override
@@ -201,7 +200,12 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveBatteryLevel( float level, double timestamp ) {
-        this.level = level;
+        // If the new value differs from the old, update old value
+        // and call delegate to update the UI
+        if ( this.batteryLevel != level) {
+            this.batteryLevel = level;
+            empaServiceDelegate.onBatteryLevelChange(level);
+        }
     }
 
     @Override
@@ -212,14 +216,6 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
     //
     // Standard Getters
     //
-
-    public float getT() {
-        return t;
-    }
-
-    public float getLevel() {
-        return level;
-    }
 
     public EmpaStatus getStatus() {
         return status;
@@ -297,6 +293,6 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     public interface EmpaServiceDelegate {
         void onHydrationLevelChange(HydrationLevel h);
-        void onHeartRateUpdated( long heartRate );
+        void onBatteryLevelChange(float level);
     }
 }
