@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
                         ++counter;                    }
                 });
             }
-        },60000,60000);
+        },10000,10000);
     }
 
     @Override
@@ -182,25 +182,25 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
                     @Override
                     public void run() {
                         // TODO : Used for sensor-less testing. Remove from final submission
-                        // EmpaStatus status = EmpaStatus.CONNECTED;
-                        EmpaStatus status = empaService.getStatus();
+                        EmpaStatus status = EmpaStatus.CONNECTED;
+                        // EmpaStatus status = empaService.getStatus();
                         if ( EmpaStatus.READY.equals( status ) ) {
                             // start scanning
-                            updateLabel(deviceStatus, R.string.turn_on_dev);
+                            updateLabel(deviceStatus, getString(R.string.turn_on_dev));
                             empaService.startScanning();
                             hide();
                             // Periodically check if device is still connected
                             handler.postDelayed( this, 5000 );
                         } else if ( EmpaStatus.CONNECTING.equals( status ) ) {
                             handler.postDelayed( this, 5000 );
-                            updateLabel(deviceStatus, R.string.dev_connecting);
+                            updateLabel(deviceStatus, getString(R.string.dev_connecting));
                         } else if ( EmpaStatus.CONNECTED.equals( status ) ) {
                             show();
-                            updateLabel(deviceStatus,R.string.battery_lev  + (int)empaService.getLevel());
+                            updateLabel(deviceStatus, getString(R.string.battery_lev, (int)empaService.getLevel()));
                             // Periodically check if device is still connected
                             handler.postDelayed( this, 5000 );
                         } else if ( EmpaStatus.DISCONNECTED.equals( status ) ) {
-                            updateLabel(deviceStatus, R.string.dev_not_connected);
+                            updateLabel(deviceStatus, getString(R.string.dev_not_connected));
                             hide();
                         }
                     }
@@ -211,7 +211,7 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
         } );
 
         // TODO this is just for debugging/demos, changes the hydration level every minute
-        // changeHydrationLevelEveryMin();
+        changeHydrationLevelEveryMin();
     }
 
     @Override
@@ -293,8 +293,12 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
     }
 
     // Update a label with some text, making sure this is run in the UI thread
-    private void updateLabel( final TextView label, final int stringAttribute ) {
+    private void updateLabel( final TextView label, final String stringAttribute ) {
         runOnUiThread( () -> label.setText( stringAttribute ) );
+    }
+
+    private void updateView( final ImageView view, final int resourceId) {
+        runOnUiThread( () -> view.setImageResource( resourceId ) );
     }
 
     private void initUiComponents() {
@@ -326,16 +330,11 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
     @Override
     public void onHydrationLevelChange(HydrationLevel h) {
         // Set background image and hydration level text based on hydration level
-        if(h.equals(HydrationLevel.WELL_HYDRATED)) {
-            youAreLabel.setText(R.string.you_are);
-            hydrationLevelLabel.setText(R.string.well_hydrated);
-            background.setImageResource(R.drawable.hydrated_background);
-        }
-        else if(h.equals(HydrationLevel.VERY_DEHYDRATED)) {
-            youAreLabel.setText(R.string.you_are);
-            hydrationLevelLabel.setText(R.string.very_dehydrated);
-            background.setImageResource(R.drawable.dehydrated_background);
-        }
+        updateLabel(youAreLabel, getString(R.string.you_are));
+        updateLabel(hydrationLevelLabel, h.getValue());
+        updateView(background, HydrationLevel.WELL_HYDRATED.equals( h ) ?
+                               R.drawable.hydrated_background :
+                               R.drawable.dehydrated_background);
 
         // Send notification to alert user about changed hydration level
         Intent intent = new Intent(this, MainActivity.class);
