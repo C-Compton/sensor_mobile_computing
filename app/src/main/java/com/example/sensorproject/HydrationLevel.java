@@ -24,21 +24,13 @@ public enum HydrationLevel {
 
     public String getValue() { return value; }
 
-    public static HydrationLevel convertFromReading( double reading) {
-        if (reading == 0.0) {
-            return WELL_HYDRATED;
-        } else if (reading == 1.0) {
-            return VERY_DEHYDRATED;
-        } else { return UNKNOWN_LEVEL; }
-    }
-
     public static HydrationLevel convert( int label ) {
         switch(label) {
             case 0:
                 return WELL_HYDRATED;
             case 1:
                 return VERY_DEHYDRATED;
-            case 4:
+            case 3:
             default:
                 return UNKNOWN_LEVEL;
         }
