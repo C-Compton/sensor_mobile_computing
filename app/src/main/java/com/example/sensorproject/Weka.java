@@ -15,7 +15,6 @@ import static weka.core.SerializationHelper.read;
 
 public class Weka {
 
-    // TODO : Return Pair of classification and confidence
     public Pair<Double, Double> classification( double min, double max, double var, double std) {
         double [] predicted_class = new double[2];
         predicted_class[0] = 0.0;
@@ -27,7 +26,6 @@ public class Weka {
 
             ArrayList<Attribute> attributes = new ArrayList<>();
 
-            // TODO : Verify that these are correct attributes
             attributes.add(new Attribute("min", 0));
             attributes.add(new Attribute("max", 1));
             attributes.add(new Attribute("var", 2));

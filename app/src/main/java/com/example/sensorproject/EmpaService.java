@@ -166,7 +166,6 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
         double var = var(gsrHistory);
         double std = std(gsrHistory);
 
-        // TODO : Get returned Pair of classification and confidence. Ensure confidence meets desired level before attempting to change status
         Pair<Double, Double> results = weka.classification( min, max, var, std ) ;
         if (results.second < 90.0 ) {
             return;
