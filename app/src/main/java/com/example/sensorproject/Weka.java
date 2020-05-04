@@ -1,6 +1,7 @@
 package com.example.sensorproject;
 
 import android.util.Log;
+import android.util.Pair;
 
 import java.util.ArrayList;
 
@@ -14,19 +15,17 @@ import static weka.core.SerializationHelper.read;
 
 public class Weka {
 
-    // TODO : Return Pair of classification and confidence
-    public HydrationLevel classification( double min, double max, double var, double std) {
+    public Pair<Double, Double> classification( double min, double max, double var, double std) {
         double [] predicted_class = new double[2];
         predicted_class[0] = 0.0;
         predicted_class[1] = 0.0;
 
         try {
             Classifier cls;
-            cls = (Classifier) read(App.getContext().getAssets().open("weka_RF_model5_0_0_0_1.model"));
+            cls = (Classifier) read(App.getContext().getAssets().open("weka_DT_model2_0_0_1_1.model"));
 
             ArrayList<Attribute> attributes = new ArrayList<>();
 
-            // TODO : Verify that these are correct attributes
             attributes.add(new Attribute("min", 0));
             attributes.add(new Attribute("max", 1));
             attributes.add(new Attribute("var", 2));
@@ -52,11 +51,13 @@ public class Weka {
             predicted_class[0] = cls.classifyInstance( instance );
             predicted_class[1] = Math.max(distribution[0], distribution[1]) * 100;
 
-            Log.d("WEKA", "Predicted class: " + predicted_class[0] + " Confidence score: " + predicted_class[1]);
+            Log.d("WEKA", "Predicted class: "
+                          + HydrationLevel.convert( (int)predicted_class[0] ).name()
+                          + " Confidence score: " + predicted_class[1]);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return HydrationLevel.convertFromReading( predicted_class[0] );
+        return new Pair<>(predicted_class[0], predicted_class[1]);
     }
 }

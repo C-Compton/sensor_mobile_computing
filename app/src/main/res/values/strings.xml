@@ -13,7 +13,8 @@
     <string name="empty_string"></string>
     <string name="you_are">You are…</string>
     <string name="turn_on_dev">Turn on Device</string>
+    <string name="discover_dev">Searching for device</string>
     <string name="dev_connecting">Connecting to Device</string>
-    <string name="battery_lev">Device Battery Level: </string>
+    <string name="battery_lev">Device Battery Level: %1$d</string>
     <string name="dev_not_connected">Device not Connected</string>
 </resources>

@@ -40,9 +40,11 @@ import com.example.sensorproject.databinding.ActivityMainBinding;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity implements EmpaService.EmpaServiceDelegate {
+public class MainActivity<U extends View> extends AppCompatActivity implements EmpaService.EmpaServiceDelegate {
 
     private EmpaService empaService;
+
+    private EmpaStatus empaStatus = EmpaStatus.DISCONNECTED;
 
     private int counter;
 
@@ -86,16 +88,16 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
     private void createNotificationChannel() {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = getString(R.string.channel_name);
-            String description = getString(R.string.channel_description);
+        if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ) {
+            CharSequence name = getString( R.string.channel_name );
+            String description = getString( R.string.channel_description );
             int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-            channel.setDescription(description);
+            NotificationChannel channel = new NotificationChannel( CHANNEL_ID, name, importance );
+            channel.setDescription( description );
             // Register the channel with the system; you can't change the importance
             // or other notification behaviors after this
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
+            NotificationManager notificationManager = getSystemService( NotificationManager.class );
+            notificationManager.createNotificationChannel( channel );
         }
     }
 
@@ -103,28 +105,27 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
     private void changeHydrationLevelEveryMin() {
         Timer timer = new Timer();
         counter = 0;
-        timer.schedule(new TimerTask() {
+        timer.schedule( new TimerTask() {
             @Override
             public void run() {
-                MainActivity.this.runOnUiThread(new Runnable() {
+                MainActivity.this.runOnUiThread( new Runnable() {
                     public void run() {
-                        if((counter % 2) == 0) {
-                            onHydrationLevelChange(HydrationLevel.WELL_HYDRATED);
+                        if ( ( counter % 2 ) == 0 ) {
+                            onHydrationLevelChange( HydrationLevel.HYDRATED );
+                        } else {
+                            onHydrationLevelChange( HydrationLevel.DEHYDRATED );
                         }
-                        else {
-                            onHydrationLevelChange(HydrationLevel.VERY_DEHYDRATED);
-                        }
-                        ++counter;                    }
-                });
+                        ++counter;
+                    }
+                } );
             }
-        },60000,60000);
+        }, 60000, 60000 );
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        if ( ContextCompat.checkSelfPermission( this, PERMISSION_STRING ) !=
-                PackageManager.PERMISSION_GRANTED ) {
+        if ( ContextCompat.checkSelfPermission( this, PERMISSION_STRING ) != PackageManager.PERMISSION_GRANTED ) {
             ActivityCompat.requestPermissions( this,
                     new String[] { Manifest.permission.ACCESS_COARSE_LOCATION },
                     REQUEST_PERMISSION_ACCESS_COARSE_LOCATION );
@@ -168,46 +169,19 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
 
         initUiComponents();
 
-        setTitle("HydrationAlert");
+        setTitle( "HydrationAlert" );
 
         findSensorButton = viewBinding.findSensorButton;
 
-        findSensorButton.setOnClickListener( new View.OnClickListener() {
-
-            @Override
-            public void onClick( View v ) {
-                Handler handler = new Handler();
-
-                handler.post( new Runnable() {
-                    @Override
-                    public void run() {
-                        // TODO : Used for sensor-less testing. Remove from final submission
-                        // EmpaStatus status = EmpaStatus.CONNECTED;
-                        EmpaStatus status = empaService.getStatus();
-                        if ( EmpaStatus.READY.equals( status ) ) {
-                            // start scanning
-                            updateLabel(deviceStatus, R.string.turn_on_dev);
-                            empaService.startScanning();
-                            hide();
-                            // Periodically check if device is still connected
-                            handler.postDelayed( this, 5000 );
-                        } else if ( EmpaStatus.CONNECTING.equals( status ) ) {
-                            handler.postDelayed( this, 5000 );
-                            updateLabel(deviceStatus, R.string.dev_connecting);
-                        } else if ( EmpaStatus.CONNECTED.equals( status ) ) {
-                            show();
-                            updateLabel(deviceStatus,R.string.battery_lev  + (int)empaService.getLevel());
-                            // Periodically check if device is still connected
-                            handler.postDelayed( this, 5000 );
-                        } else if ( EmpaStatus.DISCONNECTED.equals( status ) ) {
-                            updateLabel(deviceStatus, R.string.dev_not_connected);
-                            hide();
-                        }
-                    }
-                } );
-
-
+        findSensorButton.setOnClickListener( v -> {
+            Log.i( "STATUS", "EmpaStatus: " + empaStatus.name() );
+            if ( EmpaStatus.DISCONNECTED.equals( empaStatus ) ) {
+                // start scanning
+                updateLabel( deviceStatus, getString( R.string.turn_on_dev ) );
+                hide();
+                empaService.startScanning();
             }
+            hide();
         } );
 
         // TODO this is just for debugging/demos, changes the hydration level every minute
@@ -279,22 +253,27 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
     // This function styles the status bar; doing this here because it was difficult
     // to do with the ConstraintLayout I have in activity_main.xml
     @Override
-    public void setTitle(CharSequence title) {
-        super.setTitle(title);
+    public void setTitle( CharSequence title ) {
+        super.setTitle( title );
 
-        TextView textView = new TextView(this);
-        textView.setText(title);
-        textView.setTextColor(Color.BLACK);
-        textView.setTextSize(22);
-        textView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        textView.setGravity(Gravity.CENTER_HORIZONTAL);
-        getSupportActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
-        getSupportActionBar().setCustomView(textView);
+        TextView textView = new TextView( this );
+        textView.setText( title );
+        textView.setTextColor( Color.BLACK );
+        textView.setTextSize( 22 );
+        textView.setLayoutParams( new LinearLayout.LayoutParams( LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT ) );
+        textView.setGravity( Gravity.CENTER_HORIZONTAL );
+        getSupportActionBar().setDisplayOptions( ActionBar.DISPLAY_SHOW_CUSTOM );
+        getSupportActionBar().setCustomView( textView );
     }
 
     // Update a label with some text, making sure this is run in the UI thread
-    private void updateLabel( final TextView label, final int stringAttribute ) {
-        runOnUiThread( () -> label.setText( stringAttribute ) );
+    private void updateLabel( final TextView label, final String text ) {
+        runOnUiThread( () -> label.setText( text ) );
+    }
+
+    private void updateImageView( final ImageView view, final int attribute ) {
+        runOnUiThread( () -> view.setImageResource( attribute ) );
     }
 
     private void initUiComponents() {
@@ -319,48 +298,76 @@ public class MainActivity extends AppCompatActivity implements EmpaService.EmpaS
             findSensorButton.setVisibility( View.VISIBLE );
             youAreLabel.setVisibility( View.INVISIBLE );
             hydrationLevelLabel.setVisibility( View.INVISIBLE );
-            deviceStatus.setVisibility( View.INVISIBLE );
+            deviceStatus.setVisibility( View.VISIBLE );
         } );
     }
 
     @Override
-    public void onHydrationLevelChange(HydrationLevel h) {
+    public void onHydrationLevelChange( HydrationLevel h ) {
         // Set background image and hydration level text based on hydration level
-        if(h.equals(HydrationLevel.WELL_HYDRATED)) {
-            youAreLabel.setText(R.string.you_are);
-            hydrationLevelLabel.setText(R.string.well_hydrated);
-            background.setImageResource(R.drawable.hydrated_background);
-        }
-        else if(h.equals(HydrationLevel.VERY_DEHYDRATED)) {
-            youAreLabel.setText(R.string.you_are);
-            hydrationLevelLabel.setText(R.string.very_dehydrated);
-            background.setImageResource(R.drawable.dehydrated_background);
-        }
+        updateLabel( youAreLabel, getString( R.string.you_are ) );
+        updateLabel( hydrationLevelLabel, h.getValue() );
+        updateImageView( background, HydrationLevel.HYDRATED.equals( h ) ?
+                                     R.drawable.hydrated_background :
+                                     R.drawable.dehydrated_background );
 
         // Send notification to alert user about changed hydration level
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+        Intent intent = new Intent( this, MainActivity.class );
+        intent.setFlags( Intent.FLAG_ACTIVITY_SINGLE_TOP );
+        PendingIntent pendingIntent = PendingIntent.getActivity( this, 0, intent, 0 );
 
         createNotificationChannel();
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.notification_icon)
-                .setContentTitle("Hydration Alert")
-                .setContentText("You are " + h.value)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder( this, CHANNEL_ID )
+                .setSmallIcon( R.drawable.notification_icon )
+                .setContentTitle( "Hydration Alert" )
+                .setContentText( "You are " + h.value )
+                .setPriority( NotificationCompat.PRIORITY_DEFAULT )
+                .setContentIntent( pendingIntent )
+                .setAutoCancel( true );
 
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-        notificationManager.notify((int)System.currentTimeMillis(), builder.build());
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from( this );
+        notificationManager.notify( ( int ) System.currentTimeMillis(), builder.build() );
 
-        Log.i("HydroHomies", "Hydration level updated to : " + h.getValue());
+        Log.i( "HydroHomies", "Hydration level updated to : " + h.getValue() );
     }
 
-    // This needs to be here to satisfy EmpaService, but we aren't actually using it
     @Override
-    public void onHeartRateUpdated(long heartRate) {
+    public void onBatteryLevelChange( float level ) {
+        // Battery level has changed. Update device status to inform user
+        updateLabel( deviceStatus, getString( R.string.battery_lev, level ) );
     }
 
+    @Override
+    public void onDeviceStatusChange( EmpaStatus status ) {
+        if ( empaStatus != status ) {
+            this.empaStatus = status;
+            switch ( status ) {
+                case DISCOVERING:
+                    updateLabel( deviceStatus, getString( R.string.discover_dev ) );
+                    break;
+                case CONNECTING:
+                    updateLabel( deviceStatus, getString( R.string.dev_connecting ) );
+                    findSensorButton.setVisibility( View.INVISIBLE );
+                    break;
+                case CONNECTED:
+                    show();
+                    updateLabel( deviceStatus, getString( R.string.empty_string ) );
+                    break;
+                case DISCONNECTED:
+                    updateLabel( deviceStatus, getString( R.string.dev_not_connected ) );
+                    hide();
+                    break;
+                // For now, fall through to READY
+                case DISCONNECTING:
+                case INITIAL:
+                case READY:
+                    updateLabel( deviceStatus, getString( R.string.turn_on_dev ) );
+                    hide();
+                default:
+                    // For now, assume we're ready.
+
+            }
+        }
+    }
 }

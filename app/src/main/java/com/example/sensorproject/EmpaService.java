@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+import android.util.Pair;
 import android.widget.Toast;
 
 import com.empatica.empalink.ConnectionNotAllowedException;
@@ -32,11 +33,10 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     private HydrationLevel hydrationLevel = HydrationLevel.UNKNOWN_LEVEL;
 
-    // Skin Temperature reading
-    private float t;
-
     // Empatica device battery level
-    private float level;
+    // Device only reports battery level when it changes significantly.
+    // so start at min float value to ensure different form value to be reported
+    private float batteryLevel = Float.MIN_VALUE;
 
     private final List<Double> gsrHistory = new ArrayList<>();
 
@@ -79,14 +79,9 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didUpdateStatus( EmpaStatus status ) {
-        this.status = status;
-        // The device manager is ready for use
-        if ( status == EmpaStatus.READY ) {
-            // Start scanning
-            Log.i( "TAG", "Device manager ready. Start scanning..." );
-            deviceManager.startScanning();
-            // The device manager has established a connection
-
+        Log.i("EMPASTATUS", "Status : " + status.name());
+        if( empaServiceDelegate != null) {
+            empaServiceDelegate.onDeviceStatusChange( status );
         }
     }
 
@@ -165,8 +160,11 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
         double var = var(gsrHistory);
         double std = std(gsrHistory);
 
-        // TODO : Get returned Pair of classification and confidence. Ensure confidence meets desired level before attempting to change status
-        HydrationLevel newHydrationLevel = weka.classification( min, max, var, std ) ;
+        Pair<Double, Double> results = weka.classification( min, max, var, std ) ;
+        if (results.second < 90.0 ) {
+            return;
+        }
+        HydrationLevel newHydrationLevel = HydrationLevel.convert( results.first.intValue() );
         if(! hydrationLevel.equals( newHydrationLevel )) {
             hydrationLevel = newHydrationLevel;
             if (empaServiceDelegate != null ) {
@@ -187,7 +185,7 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveTemperature( float t, double timestamp ) {
-        this.t = t;
+        // no op
     }
 
     @Override
@@ -197,7 +195,12 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     @Override
     public void didReceiveBatteryLevel( float level, double timestamp ) {
-        this.level = level;
+        // If the new value differs from the old, update old value
+        // and call delegate to update the UI
+        if (empaServiceDelegate != null &&  batteryLevel != level) {
+            batteryLevel = level;
+            empaServiceDelegate.onBatteryLevelChange(level);
+        }
     }
 
     @Override
@@ -208,14 +211,6 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
     //
     // Standard Getters
     //
-
-    public float getT() {
-        return t;
-    }
-
-    public float getLevel() {
-        return level;
-    }
 
     public EmpaStatus getStatus() {
         return status;
@@ -293,6 +288,7 @@ public class EmpaService extends Service implements EmpaDataDelegate, EmpaStatus
 
     public interface EmpaServiceDelegate {
         void onHydrationLevelChange(HydrationLevel h);
-        void onHeartRateUpdated( long heartRate );
+        void onBatteryLevelChange(float level);
+        void onDeviceStatusChange(EmpaStatus status);
     }
 }
