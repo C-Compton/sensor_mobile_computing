@@ -111,9 +111,9 @@ public class MainActivity<U extends View> extends AppCompatActivity implements E
                 MainActivity.this.runOnUiThread( new Runnable() {
                     public void run() {
                         if ( ( counter % 2 ) == 0 ) {
-                            onHydrationLevelChange( HydrationLevel.WELL_HYDRATED );
+                            onHydrationLevelChange( HydrationLevel.HYDRATED );
                         } else {
-                            onHydrationLevelChange( HydrationLevel.VERY_DEHYDRATED );
+                            onHydrationLevelChange( HydrationLevel.DEHYDRATED );
                         }
                         ++counter;
                     }
@@ -307,7 +307,7 @@ public class MainActivity<U extends View> extends AppCompatActivity implements E
         // Set background image and hydration level text based on hydration level
         updateLabel( youAreLabel, getString( R.string.you_are ) );
         updateLabel( hydrationLevelLabel, h.getValue() );
-        updateImageView( background, HydrationLevel.WELL_HYDRATED.equals( h ) ?
+        updateImageView( background, HydrationLevel.HYDRATED.equals( h ) ?
                                      R.drawable.hydrated_background :
                                      R.drawable.dehydrated_background );
 

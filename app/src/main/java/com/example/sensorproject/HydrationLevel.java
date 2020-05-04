@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public enum HydrationLevel {
-    WELL_HYDRATED(App.getContext().getString(R.string.well_hydrated),0),
-    VERY_DEHYDRATED(App.getContext().getString(R.string.very_dehydrated), 1),
+    HYDRATED(App.getContext().getString(R.string.well_hydrated),0),
+    DEHYDRATED(App.getContext().getString(R.string.very_dehydrated), 1),
     UNKNOWN_LEVEL(App.getContext().getString(R.string.unknown_level), 2);
 
     final String value;
@@ -27,9 +27,9 @@ public enum HydrationLevel {
     public static HydrationLevel convert( int label ) {
         switch(label) {
             case 0:
-                return WELL_HYDRATED;
+                return HYDRATED;
             case 1:
-                return VERY_DEHYDRATED;
+                return DEHYDRATED;
             case 3:
             default:
                 return UNKNOWN_LEVEL;

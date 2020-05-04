@@ -51,7 +51,9 @@ public class Weka {
             predicted_class[0] = cls.classifyInstance( instance );
             predicted_class[1] = Math.max(distribution[0], distribution[1]) * 100;
 
-            Log.d("WEKA", "Predicted class: " + HydrationLevel.convert( (int)predicted_class[0] ).name() + " Confidence score: " + predicted_class[1]);
+            Log.d("WEKA", "Predicted class: "
+                          + HydrationLevel.convert( (int)predicted_class[0] ).name()
+                          + " Confidence score: " + predicted_class[1]);
         } catch (Exception e) {
             e.printStackTrace();
         }
